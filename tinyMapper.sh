@@ -4,7 +4,7 @@
 # Check 
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
-HASH=`cat /dev/urandom | tr -dc 'A-Z0-9' | head -c 6`
+HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
 
 ## ------------------------------------------------------------------
 ## -------- HELPER FUNCTIONS ----------------------------------------
@@ -123,7 +123,7 @@ SAMPLE=''
 INPUT=''
 GENOME=''
 SPIKEIN=''
-OUTDIR=''
+OUTDIR='results'
 CPU=8
 MEM=12294967296 # 12Gb
 KEEPFILES=1

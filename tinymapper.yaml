@@ -4,7 +4,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bedtools
   - bowtie2
   - deeptools
   - macs2

@@ -1,6 +1,3 @@
-J. Serizay, with contribution from H. Bordelet  
-GPL-3.0
-
 # tinyMapper 
 
 The goal of `tinyMapper.sh` is to provide a minimal -but working!- workflow to process ChIP-seq (with or without input/spikein), RNA-seq, MNase-seq and ATAC-seq data. Currently, this workflow only works for **paired-end** data. 
@@ -31,8 +28,11 @@ The main steps are:
 
 Dependencies can be instaled via conda. You can create and activate a conda environment using the yaml file we provide as follows:
 ```sh
+git clone https://github.com/js2264/tinyMapper.git
+cd tinyMapper
 conda env create -f tinymapper.yaml
 conda activate tinymapper
+./tinyMapper.sh
 ```
 
 ### Usage 
@@ -45,7 +45,7 @@ Usage: tinyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> 
       -m | --mode                 Mapping mode ('ChIP', 'MNase', 'ATAC', 'RNA') (Default: ChIP)
       -s | --sample               Path prefix to sample <SAMPLE>_R*.fastq.gz (e.g. for ~/reads/JS001_R*.fastq.gz files: --sample ~/reads/JS001)
       -g | --genome               Path prefix to reference genome (e.g. for ~/genome/W303/W303.fa fasta file: --genome ~/genome/W303/W303)
-      -o | --output               Path to store results
+      -o | --output               Path to store results (Default: "./results/)
       -i | --input                (Optional) Path prefix to input <INPUT>_R*.fastq.gz
       -c | --calibration          (Optional) Path prefix to genome used for calibration
       -t | --threads              (Optional) Number of threads (Default: 8)
@@ -114,6 +114,10 @@ conda install -c conda-forge -c bioconda \
     deeptools \
     macs2
 ```
+
+### Acknowledgments
+
+Many thanks to H. Bordelet for sharing her mapping scripts and configuration. 
 
 ### To do
 
