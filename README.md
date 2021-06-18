@@ -26,7 +26,9 @@ The main steps are:
 
 ### Installation
 
-Dependencies can be instaled via conda. You can create and activate a conda environment using the yaml file we provide as follows:
+`tinyMapper.sh` can be directly cloned from `GitHub`, and dependencies can be installed via conda. 
+You can create and activate a conda environment using the yaml file we provide as follows:
+
 ```sh
 git clone https://github.com/js2264/tinyMapper.git
 cd tinyMapper
@@ -101,19 +103,6 @@ Note that fastq files *MUST* be named following this convention:
     ```
     ./tinyMapper.sh --mode MNase -s ~/testMNase -g ~/genomes/W303/W303 -o ~/results
     ```
-
-### Required utilities
-
-The dependencies can be installed as follows (provided that you are working in a dedicated `conda` env.): 
-
-```
-conda create -n tinyMapper
-conda install -c conda-forge -c bioconda \
-    bowtie2 \
-    samtools \
-    deeptools \
-    macs2
-```
 
 ### Acknowledgments
 

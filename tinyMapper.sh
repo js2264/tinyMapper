@@ -234,7 +234,7 @@ DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; 
 #     exit 1
 # fi
 
-mkdir --parents "${OUTDIR}"
+mkdir -p "${OUTDIR}"
 touch "${LOGFILE}"
 
 # Abort if trying to calibrate without input
