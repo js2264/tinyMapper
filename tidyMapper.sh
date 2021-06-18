@@ -228,7 +228,7 @@ DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; 
 ## -------- CHECKING THAT REQUIRED FILES EXIST ----------------------
 ## ------------------------------------------------------------------
 
-# Check the OUDIR already exists
+# Check the OUTDIR already exists
 # if test -d "${OUTDIR}" ; then
 #     fn_error "Output directory already exists (${OUTDIR}). Please erase or choose another directory to store output files."
 #     fn_error "Aborting now."
@@ -243,6 +243,7 @@ if test "${DO_INPUT}" == 1 && test "${DO_CALIBRATION}" == 0 ; then
     fn_error "Calibration can only be done if an input is provided." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     usage
+    rm --force "${LOGFILE}"
     exit 1
 fi
 
@@ -251,6 +252,7 @@ if test `is_set "${SAMPLE_BASE}"` == 1 ; then
     fn_error "Please provide a sample." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     usage
+    rm --force "${LOGFILE}"
     exit 1
 fi
 
@@ -259,6 +261,7 @@ if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
     fn_error "Sample files are missing. Check sample directory: ${SAMPLE_DIR}." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     usage
+    rm --force "${LOGFILE}"
     exit 1
 fi
 
@@ -267,6 +270,7 @@ if test `is_set "${GENOME}"` == 1 ; then
     fn_error "Please provide a genome." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     usage
+    rm --force "${LOGFILE}"
     exit 1
 fi
 
@@ -275,6 +279,7 @@ if test ! -f "${GENOME_FA}" ; then
     fn_error ""${GENOME_FA}" does not exist." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     usage
+    rm --force "${LOGFILE}"
     exit 1
 fi
 
@@ -284,6 +289,7 @@ if test "${DO_INPUT}" == 0 ; then
         fn_error "Input files are missing. Check them in ${INPUT_DIR}." 2>&1 | tee -a "${LOGFILE}"
         fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
         usage
+        rm --force "${LOGFILE}"
         exit 1
     fi
 fi
@@ -294,6 +300,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         fn_error ""${SPIKEIN_FA}" does not exist." 2>&1 | tee -a "${LOGFILE}"
         fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
         usage
+        rm --force "${LOGFILE}"
         exit 1
     fi
 fi
@@ -303,6 +310,7 @@ if test ! -f "${GENOME_BASE}".1.bt2 || test ! -f "${GENOME_BASE}".2.bt2 || test 
     fn_error "Genome bowtie2 index files are missing. Please run the following command first:" 2>&1 | tee -a "${LOGFILE}"
     echo -e "bowtie2-build ${GENOME_FA} ${GENOME_BASE}" 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+    rm --force "${LOGFILE}"
     exit 1
 fi
 
@@ -312,9 +320,22 @@ if test "${DO_CALIBRATION}" == 0 ; then
         fn_error "Calibration genome bowtie2 index files are missing. Please run the following command first:" 2>&1 | tee -a "${LOGFILE}"
         echo -e "bowtie2-build ${SPIKEIN_FA} ${SPIKEIN_BASE}" 2>&1 | tee -a "${LOGFILE}"
         fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
         exit 1
     fi
 fi
+
+# Check that samtools is available
+for util in bowtie2 samtools deeptools macs2
+do
+    if test -z `command -v "${util}"` ; then
+        fn_error "${util} does not seem to be installed or loaded. Most likely, it can be installed as follows:" 2>&1 | tee -a "${LOGFILE}"
+        echo -e "conda install -c bioconda ${util}" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
+    fi
+done
 
 ## ------------------------------------------------------------------
 ## -------- INITIATING MAPPING --------------------------------------
