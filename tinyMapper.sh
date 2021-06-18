@@ -870,5 +870,18 @@ if test "${KEEPFILES}" == 1 ; then
     rm --force "${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"*
 fi
 
+## ------------------------------------------------------------------
+## ------------------- WRAP THINGS UP -------------------------------
+## ------------------------------------------------------------------
+
+## -- Back up script file
+fn_log "Backing up pipeline script" 2>&1 | tee -a "${LOGFILE}"
+cp "${BASH_SOURCE}" "${OUTDIR}"/`date "+%y%m%d%H%M"`-"${HASH}"-script.txt
+chmod -x "${OUTDIR}"/`date "+%y%m%d%H%M"`-"${HASH}"-script.txt
+
+## -- Done !
+fn_log "Pipeline achieved: `date`" 2>&1 | tee -a "${LOGFILE}"
+echo -e "Do check the log file ("${LOGFILE}") to make sure everything went ok!"
+
 ## -- Remove color decorators from log file
 sed -i 's/\x1b\[[0-9;]*m//g' "${LOGFILE}"

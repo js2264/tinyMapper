@@ -22,7 +22,7 @@ The main steps are:
     - For Mase: extra track for nucleosome positions
     - For RNA-seq: directed tracks (`fwd` and `rev` transcription)
 - Extract some *very* succint stats on mapping results
-- Keep everything tidy, organized and documented.
+- Keep everything tidy, organized, documented and reproducible.
 
 **DISCLAIMER:** This is by **no means** the "best" or "only" way to process sequencing data. Do not hesitate to give suggestions / feedbacks!
 
@@ -99,3 +99,7 @@ conda install -c conda-forge -c bioconda \
     deeptools \
     macs2
 ```
+
+### To do
+
+- Keep track of each command that was run to save them in the log file.
