@@ -11,9 +11,9 @@ The main steps are:
 - Filtering `bam` files: 
     - Fixing mates
     - Removing duplicates
+    - Removing reads with mapping quality < Q10
     - Removing unpaired reads
-    - Filtering reads based on their mapping quality (Q10)
-    - For Mase: extra filtering to fragments between 70-250 bp
+    - For Mase: extra filtering to keep only fragments between 70-250 bp
 - Generating tracks: 
     - CPM (counts per million) tracks
     - Input and spikein-based calibrated tracks 
@@ -32,10 +32,10 @@ Just download `tinyMapper.sh` script and use it!
 Usage: tinyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> | -c <CALIBRATION> | -t <THREADS> | -M <MEMORY> | -k <1, 0> ]
 
       -m | --mode                 Mapping mode ('ChIP', 'MNase', 'ATAC', 'RNA') (Default: ChIP)
-      -s | --sample               Path prefix to sample *_R*.fastq.gz (e.g. for ~/reads/JS001_R*.fastq.gz files: '~/reads/JS001')
-      -g | --genome               Path prefix to reference genome (e.g. for ~/genome/W303/W303.fa fasta file: '~/genome/W303/W303')
+      -s | --sample               Path prefix to sample <SAMPLE>_R*.fastq.gz (e.g. for ~/reads/JS001_R*.fastq.gz files: --sample ~/reads/JS001)
+      -g | --genome               Path prefix to reference genome (e.g. for ~/genome/W303/W303.fa fasta file: --genome ~/genome/W303/W303)
       -o | --output               Path to store results
-      -i | --input                (Optional) Path prefix to input *_R*.fastq.gz
+      -i | --input                (Optional) Path prefix to input <INPUT>_R*.fastq.gz
       -c | --calibration          (Optional) Path prefix to genome used for calibration
       -t | --threads              (Optional) Number of threads (Default: 8)
       -M | --memory               (Optional) Memory in bits (Default: 12294967296, which is 12Gb)
@@ -54,36 +54,42 @@ Note that fastq files *MUST* be named following this convention:
 
     - Without input:               
 
-        `./tinyMapper.sh --mode ChIP -s ~/HB44 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results`
+        ```
+        ./tinyMapper.sh --mode ChIP -s ~/testIP -g ~/genomes/R64-1-1/R64-1-1 -o ~/results
+        ```
     
     - With input:
 
         ```
         ./tinyMapper.sh --mode ChIP \
-            -s ~/HB44 \
-            -i ~/HB42 \
-            -g ~/genomes/R64-1-1/R64-1-1 \
-            -o ~/results`
+            --sample ~/testIP \
+            --input ~/testInput \
+            --genome ~/genomes/R64-1-1/R64-1-1 \
+            --output ~/results`
         ```
     
     - With input and calibration:
 
         ```
         ./tinyMapper.sh --mode ChIP \
-            -s ~/HB44 \
-            -i ~/HB42 \
-            -g ~/genomes/R64-1-1/R64-1-1 \
-            -c ~/genomes/Cglabrata/Cglabrata \
-            -o ~/results
+            --sample ~/testIP \
+            --input ~/testInput \
+            --genome ~/genomes/R64-1-1/R64-1-1 \
+            --calibration ~/genomes/Cglabrata/Cglabrata \
+            --output ~/results
         ```
     
 * **RNA-seq mode**:
 
-    `./tinyMapper.sh --mode RNA -s ~/AB4 -g ~/genomes/W303/W303 -o ~/results`
+    ```
+    ./tinyMapper.sh --mode RNA -s ~/testRNA -g ~/genomes/W303/W303 -o ~/results
+    ```
 
 * **MNase-seq mode**:
 
-    `./tinyMapper.sh --mode MNase -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results`
+    ```
+    ./tinyMapper.sh --mode MNase -s ~/testMNase -g ~/genomes/W303/W303 -o ~/results
+    ```
 
 ### Required utilities
 
@@ -100,4 +106,7 @@ conda install -c conda-forge -c bioconda \
 
 ### To do
 
+- Allow to specify filtering options in `samtools view`
+- Allow to specify whether duplicates should be removed or not
 - Keep track of each command that was run to save them in the log file.
+- Allow different filtering of MNase fragment sizes
