@@ -879,6 +879,12 @@ fn_log "Backing up pipeline script" 2>&1 | tee -a "${LOGFILE}"
 cp "${BASH_SOURCE}" "${OUTDIR}"/`date "+%y%m%d%H%M"`-"${HASH}"-script.txt
 chmod -x "${OUTDIR}"/`date "+%y%m%d%H%M"`-"${HASH}"-script.txt
 
+## -- List generated files
+echo -e "---" >> "${LOGFILE}"
+fn_log "GENERATED FILES" >> "${LOGFILE}"
+tree "${OUTDIR}" -P "*${HASH}*" --prune 2>&1 | tee -a "${LOGFILE}"
+echo -e "---" >> "${LOGFILE}"
+
 ## -- Done !
 fn_log "Pipeline achieved: `date`" 2>&1 | tee -a "${LOGFILE}"
 echo -e "Do check the log file ("${LOGFILE}") to make sure everything went ok!"

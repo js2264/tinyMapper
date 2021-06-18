@@ -3,9 +3,7 @@ GPL-3.0
 
 # tinyMapper 
 
-The goal of `tinyMapper.sh` is to provide a minimal -but working!- workflow to process ChIP-seq (with or without input/spikein), RNA-seq, MNase-seq and ATAC-seq data. 
-
-Currently, this workflow only works for **paired-end** data. 
+The goal of `tinyMapper.sh` is to provide a minimal -but working!- workflow to process ChIP-seq (with or without input/spikein), RNA-seq, MNase-seq and ATAC-seq data. Currently, this workflow only works for **paired-end** data. 
 
 The main steps are: 
 
