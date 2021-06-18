@@ -28,6 +28,8 @@ The main steps are:
 
 ### Usage 
 
+Just download `tinyMapper.sh` script and use it!
+
 ```
 Usage: tinyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> | -c <CALIBRATION> | -t <THREADS> | -M <MEMORY> | -k <1, 0> ]
 
@@ -54,27 +56,46 @@ Note that fastq files *MUST* be named following this convention:
 
     - Without input:               
 
-        `./tinyMapper.sh -m ChIP -s ~/HB44 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results`
+        `./tinyMapper.sh --mode ChIP -s ~/HB44 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results`
     
     - With input:
 
-        `./tinyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results`
+        ```
+        ./tinyMapper.sh --mode ChIP \
+            -s ~/HB44 \
+            -i ~/HB42 \
+            -g ~/genomes/R64-1-1/R64-1-1 \
+            -o ~/results`
+        ```
     
     - With input and calibration:
 
-        `./tinyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -c ~/genomes/Cglabrata/Cglabrata -o ~/results`
+        ```
+        ./tinyMapper.sh --mode ChIP \
+            -s ~/HB44 \
+            -i ~/HB42 \
+            -g ~/genomes/R64-1-1/R64-1-1 \
+            -c ~/genomes/Cglabrata/Cglabrata \
+            -o ~/results
+        ```
     
 * **RNA-seq mode**:
 
-    `./tinyMapper.sh -m RNA -s ~/AB4 -g ~/genomes/W303/W303 -o ~/results`
+    `./tinyMapper.sh --mode RNA -s ~/AB4 -g ~/genomes/W303/W303 -o ~/results`
 
 * **MNase-seq mode**:
 
-    `./tinyMapper.sh -m MNase -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results`
+    `./tinyMapper.sh --mode MNase -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results`
 
 ### Required utilities
 
-`bowtie2`  
-`samtools`  
-`deeptools`  
-`macs2`  
+The dependencies can be installed as follows (provided that you are working in a dedicated `conda` env.): 
+
+```
+conda create -n tinyMapper
+conda install -c conda-forge -c bioconda \
+    bowtie2 \
+    samtools \
+    deeptools \
+    macs2
+```

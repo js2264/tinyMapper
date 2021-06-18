@@ -799,7 +799,7 @@ if test "${DO_PEAKS}" == 0 && test "${DO_INPUT}" == 1 ; then
             --format BAMPE \
             --gsize 13000000 \
             --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
-            --name "${SAMPLE_BASE}_genome-${GENOME}" 2>> "${LOGFILE}"
+            --name "${SAMPLE_BASE}_genome-${GENOME}_${HASH}" 2>> "${LOGFILE}"
     
     fi 
 
@@ -811,7 +811,7 @@ if test "${DO_PEAKS}" == 0 && test "${DO_INPUT}" == 1 ; then
             --format BAMPE \
             --gsize 13000000 \
             --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
-            --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}" 2>> "${LOGFILE}"
+            --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}" 2>> "${LOGFILE}"
     
     fi 
 
