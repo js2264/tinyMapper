@@ -1,0 +1,13 @@
+name: tinymapper
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bedtools
+  - bowtie2
+  - deeptools
+  - macs2
+  - mawk
+  - minimap2
+  - samtools
