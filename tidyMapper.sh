@@ -2,6 +2,7 @@
 
 # J. Serizay, with contribution from H. Bordelet
 # CC BY-NC 4.0
+# Check 
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`cat /dev/urandom | tr -dc 'A-Z0-9' | head -c 6`
@@ -34,9 +35,19 @@ function usage() {
     echo -e ""
     echo -e "Examples:"
     echo -e ""
-    echo -e "      ./tidyMapper.sh -m ChIP -s ~/HB44 -g ~/genomes/R64-1-1/R64-1-1 -o results"
-    echo -e "      ./tidyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -o results"
-    echo -e "      ./tidyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -c ~/genomes/Cglabrata/Cglabrata -o results"
+    echo -e "   ChIP-seq mode:"
+    echo -e ""
+    echo -e "      Without input:               ./tidyMapper.sh -m ChIP -s ~/HB44 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results"
+    echo -e "      With input:                  ./tidyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results"
+    echo -e "      With input and calibration:  ./tidyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -c ~/genomes/Cglabrata/Cglabrata -o ~/results"
+    echo -e ""
+    echo -e "   RNA-seq mode:"
+    echo -e ""
+    echo -e "      ./tidyMapper.sh -m RNA -s ~/AB4 -g ~/genomes/W303/W303 -o ~/results"
+    echo -e ""
+    echo -e "   MNase-seq mode:"
+    echo -e ""
+    echo -e "      ./tidyMapper.sh -m MNase -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results"
     echo -e ""
     echo -e "Required utilities:"
     echo -e ""
@@ -86,6 +97,20 @@ function fn_warning {
     YELLOW="\e[33m"
     DEFAULT="\e[39m"
     echo -e "${BOLD}${BLUE}${date} | ${ORANGE}[WARNING]${DEFAULT} $@${BOLDEND}"
+}
+
+function fastqfastcnt {
+
+    fix_base_count() {
+        local counts=($(cat))
+        echo "${counts[0]}"
+    }
+
+    gzip -dc $1 \
+        | awk 'NR % 4 == 2' \
+        | wc -l \
+        | fix_base_count
+
 }
 
 ## ------------------------------------------------------------------
@@ -775,6 +800,9 @@ fi
 ## ------------------- CHECK NB OF READS ----------------------------
 ## ------------------------------------------------------------------
 
+echo -e "---" >> "${LOGFILE}"
+fn_log "NUMBER OF SEQUENCED FRAGMENTS: ${SAMPLE_R1}" >> "${LOGFILE}"
+echo `fastqfastcnt "${SAMPLE_R1}" frags.` >> "${LOGFILE}"
 echo -e "---" >> "${LOGFILE}"
 
 if test "${DO_CALIBRATION}" == 0 ; then
