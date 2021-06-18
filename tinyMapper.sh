@@ -372,26 +372,26 @@ echo -e "---" >> "${LOGFILE}"
 ## -------- PREPARING RESULT DIRECTORIES AND VARIABLES --------------
 ## ------------------------------------------------------------------
 
-mkdir --parents "${OUTDIR}"/fastq/
-mkdir --parents "${OUTDIR}"/fastq/genome/
-mkdir --parents "${OUTDIR}"/fastq/genome/"${SAMPLE_BASE}"/
-mkdir --parents "${OUTDIR}"/fastq/genome/"${INPUT_BASE}"/
-mkdir --parents "${OUTDIR}"/fastq/spikein/
-mkdir --parents "${OUTDIR}"/fastq/spikein/"${SAMPLE_BASE}"/
-mkdir --parents "${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/
-mkdir --parents "${OUTDIR}"/bam/
-mkdir --parents "${OUTDIR}"/bam/genome/
-mkdir --parents "${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/
-mkdir --parents "${OUTDIR}"/bam/genome/"${INPUT_BASE}"/
-mkdir --parents "${OUTDIR}"/bam/spikein/
-mkdir --parents "${OUTDIR}"/bam/spikein/"${SAMPLE_BASE}"/
-mkdir --parents "${OUTDIR}"/bam/spikein/"${INPUT_BASE}"/
-mkdir --parents "${OUTDIR}"/tracks/
-mkdir --parents "${OUTDIR}"/tracks/"${SAMPLE_BASE}"
-mkdir --parents "${OUTDIR}"/tracks/"${INPUT_BASE}"
-mkdir --parents "${OUTDIR}"/peaks/
-mkdir --parents "${OUTDIR}"/peaks/"${SAMPLE_BASE}"
-mkdir --parents "${OUTDIR}"/stats/
+mkdir -p "${OUTDIR}"/fastq/
+mkdir -p "${OUTDIR}"/fastq/genome/
+mkdir -p "${OUTDIR}"/fastq/genome/"${SAMPLE_BASE}"/
+mkdir -p "${OUTDIR}"/fastq/genome/"${INPUT_BASE}"/
+mkdir -p "${OUTDIR}"/fastq/spikein/
+mkdir -p "${OUTDIR}"/fastq/spikein/"${SAMPLE_BASE}"/
+mkdir -p "${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/
+mkdir -p "${OUTDIR}"/bam/
+mkdir -p "${OUTDIR}"/bam/genome/
+mkdir -p "${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/
+mkdir -p "${OUTDIR}"/bam/genome/"${INPUT_BASE}"/
+mkdir -p "${OUTDIR}"/bam/spikein/
+mkdir -p "${OUTDIR}"/bam/spikein/"${SAMPLE_BASE}"/
+mkdir -p "${OUTDIR}"/bam/spikein/"${INPUT_BASE}"/
+mkdir -p "${OUTDIR}"/tracks/
+mkdir -p "${OUTDIR}"/tracks/"${SAMPLE_BASE}"
+mkdir -p "${OUTDIR}"/tracks/"${INPUT_BASE}"
+mkdir -p "${OUTDIR}"/peaks/
+mkdir -p "${OUTDIR}"/peaks/"${SAMPLE_BASE}"
+mkdir -p "${OUTDIR}"/stats/
 
 SAMPLE_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".sam
 SAMPLE_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
