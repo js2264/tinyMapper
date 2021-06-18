@@ -194,7 +194,7 @@ INPUT_BASE=`basename "${INPUT}"`
 INPUT_R1="${INPUT}_R1.fastq.gz"
 INPUT_R2="${INPUT}_R2.fastq.gz"
 
-LOGFILE="${OUTDIR}/${HASH}-log.txt"
+LOGFILE="${OUTDIR}/`date "+%y%m%d%H%M"`-${HASH}-log.txt"
 DO_INPUT=`is_set "${INPUT}"`
 DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
@@ -553,6 +553,7 @@ if test "${MODE}" == MNase ; then
     samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
         | mawk '/^@/ || (sqrt(($9^2)) > 70 && sqrt(($9^2)) < 250)' \
         | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}"
+    samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}" 2>> "${LOGFILE}"
 fi
 
 ## ------------------------------------------------------------------
@@ -741,28 +742,32 @@ fi
 ## ------------------- CALLING PEAKS --------------------------------
 ## ------------------------------------------------------------------
 
-fn_log "Calling peaks for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
-
 if test "${DO_PEAKS}" == 0 && test "${DO_INPUT}" == 1 ; then
 
-    macs2 callpeak \
-        -t "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
-        --format BAMPE \
-        --gsize 13000000 \
-        --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
-        --name "${SAMPLE_BASE}_genome-${GENOME}" 2>> "${LOGFILE}"
+    fn_log "Calling peaks for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
 
-fi
+    if test "${DO_INPUT}" == 1 ; then
 
-if test "${DO_PEAKS}" == 0 && test "${DO_INPUT}" == 0 ; then
+        macs2 callpeak \
+            -t "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
+            --format BAMPE \
+            --gsize 13000000 \
+            --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
+            --name "${SAMPLE_BASE}_genome-${GENOME}" 2>> "${LOGFILE}"
+    
+    fi 
 
-    macs2 callpeak \
-        -t "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
-        -c "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
-        --format BAMPE \
-        --gsize 13000000 \
-        --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
-        --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}" 2>> "${LOGFILE}"
+    if test "${DO_INPUT}" == 0 ; then
+
+        macs2 callpeak \
+            -t "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
+            -c "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
+            --format BAMPE \
+            --gsize 13000000 \
+            --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
+            --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}" 2>> "${LOGFILE}"
+    
+    fi 
 
 fi
 
