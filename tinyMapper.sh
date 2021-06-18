@@ -325,7 +325,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
 fi
 
 # Check that samtools is available
-for util in bowtie2 samtools deeptools macs2
+for util in bowtie2 samtools deeptools
 do
     if test -z `command -v "${util}"` ; then
         fn_error "${util} does not seem to be installed or loaded. Most likely, it can be installed as follows:" 2>&1 | tee -a "${LOGFILE}"
@@ -336,37 +336,16 @@ do
     fi
 done
 
-## ------------------------------------------------------------------
-## -------- INITIATING MAPPING --------------------------------------
-## ------------------------------------------------------------------
-
-fn_log "Pipeline started : `date`" 2>&1 | tee "${LOGFILE}"
-fn_log "Command   : ${INVOC}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "Hash      : ${HASH}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "Log file  : ${LOGFILE}" 2>&1 | tee -a "${LOGFILE}"
-echo -e "---" >> "${LOGFILE}"
-fn_log "MODE      : ${MODE}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "SAMPLE    : ${SAMPLE}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "GENOME    : ${GENOME}" 2>&1 | tee -a "${LOGFILE}"
-if test "${DO_INPUT}" == 0 ; then
-    fn_log "INPUT     : ${INPUT}" 2>&1 | tee -a "${LOGFILE}"
-else 
-    fn_warning "Input reads not provided. Processing without input." 2>&1 | tee -a "${LOGFILE}"
+if test "${DO_PEAKS}" == 0 ; then
+    util=macs2
+    if test -z `command -v "${util}"` ; then
+        fn_error "${util} does not seem to be installed or loaded. Most likely, it can be installed as follows:" 2>&1 | tee -a "${LOGFILE}"
+        echo -e "conda install -c bioconda ${util}" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
+    fi
 fi
-if test "${DO_CALIBRATION}" == 0 ; then
-    fn_log "SPIKEIN   : ${SPIKEIN}" 2>&1 | tee -a "${LOGFILE}"
-else
-    fn_warning "Spikein genome not provided. Processing without calibration." 2>&1 | tee -a "${LOGFILE}"
-fi
-fn_log "CPU       : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "MEM       : ${MEM}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "OUTDIR    : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
-echo -e "---" >> "${LOGFILE}"
-fn_log "bowtie2   : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "samtools  : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "deeptools : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "macs2     : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-echo -e "---" >> "${LOGFILE}"
 
 ## ------------------------------------------------------------------
 ## -------- PREPARING RESULT DIRECTORIES AND VARIABLES --------------
@@ -434,6 +413,38 @@ if test "${MODE}" == RNA ; then
     SAMPLE_TRACK_FWD="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.CPM.bw
     SAMPLE_TRACK_REV="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.CPM.bw
 fi
+
+## ------------------------------------------------------------------
+## -------- INITIATING MAPPING --------------------------------------
+## ------------------------------------------------------------------
+
+fn_log "Pipeline started : `date`" 2>&1 | tee "${LOGFILE}"
+fn_log "Command   : ${INVOC}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Hash      : ${HASH}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Log file  : ${LOGFILE}" 2>&1 | tee -a "${LOGFILE}"
+echo -e "---" >> "${LOGFILE}"
+fn_log "MODE      : ${MODE}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "SAMPLE    : ${SAMPLE}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "GENOME    : ${GENOME}" 2>&1 | tee -a "${LOGFILE}"
+if test "${DO_INPUT}" == 0 ; then
+    fn_log "INPUT     : ${INPUT}" 2>&1 | tee -a "${LOGFILE}"
+else 
+    fn_warning "Input reads not provided. Processing without input." 2>&1 | tee -a "${LOGFILE}"
+fi
+if test "${DO_CALIBRATION}" == 0 ; then
+    fn_log "SPIKEIN   : ${SPIKEIN}" 2>&1 | tee -a "${LOGFILE}"
+else
+    fn_warning "Spikein genome not provided. Processing without calibration." 2>&1 | tee -a "${LOGFILE}"
+fi
+fn_log "CPU       : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "MEM       : ${MEM}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "OUTDIR    : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
+echo -e "---" >> "${LOGFILE}"
+fn_log "bowtie2   : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "samtools  : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "deeptools : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "macs2     : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+echo -e "---" >> "${LOGFILE}"
 
 ## ------------------------------------------------------------------
 ## ------------------- MAPPING --------------------------------------
