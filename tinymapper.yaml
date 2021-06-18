@@ -9,5 +9,4 @@ dependencies:
   - deeptools
   - macs2
   - mawk
-  - minimap2
   - samtools
