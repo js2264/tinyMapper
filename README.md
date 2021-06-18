@@ -1,5 +1,5 @@
 J. Serizay, with contribution from H. Bordelet  
-CC BY-NC 4.0
+GPL-3.0
 
 The goal of `tinyMapper.sh` is to provide a minimal -but working!- workflow to process ChIP-seq (with or without input/spikein), RNA-seq, MNase-seq and ATAC-seq data. 
 
