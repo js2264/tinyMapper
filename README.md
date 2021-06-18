@@ -27,6 +27,14 @@ The main steps are:
 - This is by **no means** the "best" or "only" way to process sequencing data. Do not hesitate to give suggestions / feedbacks!
 - This workflow does **NOT** include any proper QC / validation of the data. At the very least, do run `fastqc` on the sequencing data. Further QC checks are highly recommended, and will vary depending on which assay is performed. 
 
+### Installation
+
+Dependencies can be instaled via conda. You can create and activate a conda environment using the yaml file we provide as follows:
+```sh
+conda env create -f tinymapper.yaml
+conda activate tinymapper
+```
+
 ### Usage 
 
 Just download `tinyMapper.sh` script and use it!
