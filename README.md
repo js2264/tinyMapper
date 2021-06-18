@@ -22,7 +22,10 @@ The main steps are:
 - Extract some *very* succint stats on mapping results
 - Keep everything tidy, organized, documented and reproducible.
 
-**DISCLAIMER:** This is by **no means** the "best" or "only" way to process sequencing data. Do not hesitate to give suggestions / feedbacks!
+**DISCLAIMER:** 
+
+- This is by **no means** the "best" or "only" way to process sequencing data. Do not hesitate to give suggestions / feedbacks!
+- This workflow does **NOT** include any proper QC / validation of the data. At the very least, do run `fastqc` on the sequencing data. Further QC checks are highly recommended, and will vary depending on which assay is performed. 
 
 ### Usage 
 
