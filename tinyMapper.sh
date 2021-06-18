@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # J. Serizay, with contribution from H. Bordelet
-# CC BY-NC 4.0
 # Check 
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
