@@ -149,7 +149,9 @@ INPUT=''
 GENOME=''
 SPIKEIN=''
 OUTDIR='results'
-CPU=8
+FILTEROPTIONS='-f 2 -q 10'
+KEEPDUPLICATES=1
+CPU=16
 MEM=12294967296 # 12Gb
 KEEPFILES=1
 
@@ -158,7 +160,9 @@ KEEPFILES=1
 # INPUT=HB42
 # GENOME=~/genomes/R64-1-1/R64-1-1
 # SPIKEIN=~/genomes/Cglabrata_CBS138/Cglabrata_CBS138
-# OUTDIR=results_2
+# OUTDIR=results
+# FILTEROPTIONS='-F 4 -q 5'
+# KEEPDUPLICATES=0
 # CPU=16
 # MEM=12294967296 # 12Gb
 # KEEPFILES=0
@@ -203,6 +207,22 @@ do
         shift 
         shift 
         ;;
+        #####
+        ##### ADVANCED ARGUMENTS
+        #####
+        -f|--filter)
+        FILTEROPTIONS=${2}
+        shift 
+        shift 
+        ;;
+        -d|--duplicates)
+        KEEPDUPLICATES="${2}"
+        shift 
+        shift 
+        ;;
+        #####
+        ##### OPTIONAL ARGUMENTS
+        #####
         -t|--threads)
         CPU="${2}"
         shift 
@@ -246,6 +266,7 @@ LOGFILE="${OUTDIR}/`date "+%y%m%d"`-${HASH}-log.txt"
 DO_INPUT=`is_set "${INPUT}"`
 DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
+REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " -r " ; else echo " " ; fi`
 
 ## ------------------------------------------------------------------
 ## -------- CHECKING THAT REQUIRED FILES EXIST ----------------------
@@ -469,6 +490,8 @@ if test "${DO_CALIBRATION}" == 0 ; then
 else
     fn_warning "Spikein genome not provided. Processing without calibration." 2>&1 | tee -a "${LOGFILE}"
 fi
+fn_log "Keep dups.: ${KEEPDUPLICATES}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Filt. opt.: ${FILTEROPTIONS}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "CPU       : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "MEM       : ${MEM}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "OUTDIR    : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
