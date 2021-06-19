@@ -2,22 +2,22 @@
 
 The goal of `tinyMapper.sh` is to provide a minimal -but working!- workflow to process ChIP-seq (with or without input/spikein), RNA-seq, MNase-seq and ATAC-seq data. Currently, this workflow only works for **paired-end** data. 
 
-The main steps are: 
+The default steps are: 
 
 - Mapping with bowtie2 (against spikein ref. as well if needed)
 - Filtering `bam` files: 
     - Fixing mates
-    - Removing duplicates
-    - Removing reads with mapping quality < Q10
-    - Removing unpaired reads
+    - Removing duplicates (can be skipped with `--duplicates`)
+    - Removing reads with mapping quality < Q10 (can be adjusted / skipped with `--filter <SAMTOOLS VIEW OPTIONS>`)
+    - Removing unpaired reads (can be adjusted / skipped with `--filter <SAMTOOLS VIEW OPTIONS>`)
     - For Mase: extra filtering to keep only fragments between 70-250 bp
 - Generating tracks: 
     - CPM (counts per million) tracks
     - Input and spikein-based calibrated tracks 
     - For Mase: extra track for nucleosome positions
     - For RNA-seq: directed tracks (`fwd` and `rev` transcription)
-- Extract some *very* succint stats on mapping results
-- Keep everything tidy, organized, documented and reproducible. Notably, when running `tinyMapper.sh`, three files are generated: 
+- Extracting some *very* succint stats on mapping results
+- Keeping everything tidy, organized, documented and reproducible. Notably, when running `tinyMapper.sh`, three files are generated: 
     - `*-log.txt`: A detailed `log` file
     - `*-commands.txt`: A list of the actual commands that were executed in the pipeline
     - `*-script.txt`: A backup copy of the `tinyMapper.sh` entire script as it was at the time of the execution

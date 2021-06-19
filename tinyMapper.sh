@@ -12,32 +12,30 @@ function usage() {
     echo -e "# J. Serizay, C. Matthey-Doret, H. Bordelet"
     echo -e "# GPL-3.0"
     echo -e ""
-    echo -e "Usage: tidyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> | -c <CALIBRATION> | -t <THREADS> | -M <MEMORY> | -k <1, 0> ]"
+    echo -e "Usage: tidyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> | -c <CALIBRATION> | -t <THREADS> | -M <MEMORY> | -k ]"
     echo -e ""
     echo -e "-------------------------------"
     echo -e ""
     echo -e "   BASIC ARGUMENTS"
     echo -e ""
-    echo -e "      -m | --mode                 Mapping mode (ChIP, MNase, ATAC, RNA) (Default: ChIP)"
-    echo -e "      -s | --sample               Path prefix to sample <SAMPLE>_R*.fastq.gz (e.g. for ~/reads/JS001_R*.fastq.gz files: --sample ~/reads/JS001)"
-    echo -e "      -g | --genome               Path prefix to reference genome (e.g. for ~/genome/W303/W303.fa fasta file: --genome ~/genome/W303/W303)"
-    echo -e "      -o | --output               Path to store results (Default: ./results/)"
-    echo -e "      -i | --input                (Optional) Path prefix to input <INPUT>_R*.fastq.gz"
-    echo -e "      -c | --calibration          (Optional) Path prefix to genome used for calibration"
-    echo -e "      -t | --threads              (Optional) Number of threads (Default: 8)"
-    echo -e "      -M | --memory               (Optional) Memory in bits (Default: 12294967296, which is 12Gb)"
-    echo -e "      -k | --keepIntermediate     (Optional) Keep intermediate mapping files (Default: 1 (i.e. 'false'))"
-    echo -e "      -h | --help                 Print this message"
+    echo -e "      -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA) (Default: ChIP)"
+    echo -e "      -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)"
+    echo -e "      -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)"
+    echo -e "      -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)"
+    echo -e "      -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`"
+    echo -e "      -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
+    echo -e "      -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)"
+    echo -e "      -M|--memory <MEMORY>             (Optional) Memory in bits (Default: 12294967296, which is 12Gb)"
+    echo -e "      -k|--keepIntermediate            (Optional) Keep intermediate mapping files"
+    echo -e "      -h|--help                        Print this message"
     echo -e ""
     echo -e "   -----------"
     echo -e ""
     echo -e "   ADVANCED ARGUMENTS"
     echo -e ""
-    echo -e "      -f | --filter               Filtering options for \`samtools view\` (between single quotes)"
-    echo -e "                                  Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)"
-    echo -e ""
-    echo -e "      -d | --duplicates           Keep duplicate reads"
-    echo -e "                                  Default: 1 (i.e. 'false')"
+    echo -e "      -f|--filter <FILTER>      Filtering options for \`samtools view\` (between single quotes)"
+    echo -e "                                Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)"
+    echo -e "      -d|--duplicates           Keep duplicate reads"
     echo -e ""
     echo -e "-------------------------------"
     echo -e ""
@@ -151,9 +149,9 @@ SPIKEIN=''
 OUTDIR='results'
 FILTEROPTIONS='-f 2 -q 10'
 KEEPDUPLICATES=1
+KEEPFILES=1
 CPU=16
 MEM=12294967296 # 12Gb
-KEEPFILES=1
 
 # MODE=ChIP
 # SAMPLE=HB44
@@ -216,8 +214,7 @@ do
         shift 
         ;;
         -d|--duplicates)
-        KEEPDUPLICATES="${2}"
-        shift 
+        KEEPDUPLICATES=0
         shift 
         ;;
         #####
@@ -234,8 +231,7 @@ do
         shift 
         ;;
         -k|--keepIntermediate)
-        KEEPFILES="${2}"
-        shift 
+        KEEPFILES=0
         shift 
         ;;
         -h|--help)
@@ -490,7 +486,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
 else
     fn_warning "Spikein genome not provided. Processing without calibration." 2>&1 | tee -a "${LOGFILE}"
 fi
-fn_log "Keep dups.: ${KEEPDUPLICATES}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Keep dups.: `if test ${KEEPDUPLICATES} == 0 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
 fn_log "Filt. opt.: ${FILTEROPTIONS}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "CPU       : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "MEM       : ${MEM}" 2>&1 | tee -a "${LOGFILE}"
