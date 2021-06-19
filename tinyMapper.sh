@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# J. Serizay, with contribution from H. Bordelet
-# Check 
-
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
 
@@ -12,25 +9,37 @@ HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
 
 function usage() {
     echo -e ""
-    echo -e "# J. Serizay, with contribution from H. Bordelet"
-    echo -e "# CC BY-NC 4.0"
+    echo -e "# J. Serizay, C. Matthey-Doret, H. Bordelet"
+    echo -e "# GPL-3.0"
     echo -e ""
     echo -e "Usage: tidyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> | -c <CALIBRATION> | -t <THREADS> | -M <MEMORY> | -k <1, 0> ]"
     echo -e ""
-    echo -e "      -m | --mode                 Mapping mode ('ChIP', 'MNase', 'ATAC', 'RNA') (Default: ChIP)"
-    echo -e "      -s | --sample               Path to sample *_R*.fastq.gz (e.g. for ~/reads/JS001_R*.fastq.gz files: '~/reads/JS001')"
-    echo -e "      -g | --genome               Path to genome (e.g. for ~/genome/W303/W303.fa fasta file: '~/genome/W303/W303')"
-    echo -e "      -o | --output               Path to store results"
-    echo -e "      -i | --input                (Optional) Path to input *_R*.fastq.gz (e.g. for ~/reads/JS002_R*.fastq.gz files: '~/reads/JS002')"
-    echo -e "      -c | --calibration          (Optional) Path to genome used for calibration (e.g. for ~/genome/Cglabrata/Cglabrata.fa fasta file: '~/genome/Cglabrata/Cglabrata')"
+    echo -e "-------------------------------"
+    echo -e ""
+    echo -e "   BASIC ARGUMENTS"
+    echo -e ""
+    echo -e "      -m | --mode                 Mapping mode (ChIP, MNase, ATAC, RNA) (Default: ChIP)"
+    echo -e "      -s | --sample               Path prefix to sample <SAMPLE>_R*.fastq.gz (e.g. for ~/reads/JS001_R*.fastq.gz files: --sample ~/reads/JS001)"
+    echo -e "      -g | --genome               Path prefix to reference genome (e.g. for ~/genome/W303/W303.fa fasta file: --genome ~/genome/W303/W303)"
+    echo -e "      -o | --output               Path to store results (Default: ./results/)"
+    echo -e "      -i | --input                (Optional) Path prefix to input <INPUT>_R*.fastq.gz"
+    echo -e "      -c | --calibration          (Optional) Path prefix to genome used for calibration"
     echo -e "      -t | --threads              (Optional) Number of threads (Default: 8)"
     echo -e "      -M | --memory               (Optional) Memory in bits (Default: 12294967296, which is 12Gb)"
     echo -e "      -k | --keepIntermediate     (Optional) Keep intermediate mapping files (Default: 1 (i.e. 'false'))"
     echo -e "      -h | --help                 Print this message"
     echo -e ""
-    echo -e "Note that fastq files *MUST* be named following this convention:"
-    echo -e "   read 1: '*_R1.fastq.gz'"
-    echo -e "   (read 2: '*_R2.fastq.gz')"
+    echo -e "   -----------"
+    echo -e ""
+    echo -e "   ADVANCED ARGUMENTS"
+    echo -e ""
+    echo -e "      -f | --filter               Filtering options for \`samtools view\` (between single quotes)"
+    echo -e "                                  Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)"
+    echo -e ""
+    echo -e "      -d | --duplicates           Keep duplicate reads"
+    echo -e "                                  Default: 1 (i.e. 'false')"
+    echo -e ""
+    echo -e "-------------------------------"
     echo -e ""
     echo -e "Examples:"
     echo -e ""
@@ -48,12 +57,14 @@ function usage() {
     echo -e ""
     echo -e "      ./tidyMapper.sh -m MNase -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results"
     echo -e ""
+    echo -e "-------------------------------"
+    echo -e ""
     echo -e "Required utilities:"
     echo -e ""
-    echo -e "      bowtie2"
-    echo -e "      samtools"
-    echo -e "      deeptools"
-    echo -e "      macs2"
+    echo -e "   bowtie2"
+    echo -e "   samtools"
+    echo -e "   deeptools"
+    echo -e "   macs2"
     echo -e ""
 }
 
@@ -82,7 +93,7 @@ function fn_error {
     BLUE="\e[96m"
     YELLOW="\e[33m"
     DEFAULT="\e[39m"
-    echo -e "${BOLD}${BLUE}${date} | ${RED}[ERROR]${DEFAULT} $@${BOLDEND}"
+    echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${DEFAULT} $@${BOLDEND}"
 }
 
 function fn_warning {
@@ -95,7 +106,21 @@ function fn_warning {
     BLUE="\e[96m"
     YELLOW="\e[33m"
     DEFAULT="\e[39m"
-    echo -e "${BOLD}${BLUE}${date} | ${ORANGE}[WARNING]${DEFAULT} $@${BOLDEND}"
+    echo -e "${BOLD}${BLUE}${date} | ${ORANGE}[WAR.]${DEFAULT} $@${BOLDEND}"
+}
+
+function fn_exec {
+    date=`date "+%y-%m-%d %H:%M:%S"`
+    BOLD="\e[1m"
+    BOLDEND="\e[21m"
+    GREEN="\e[32m"
+    RED="\e[31m"
+    BLUE="\e[96m"
+    YELLOW="\e[33m"
+    DEFAULT="\e[39m"
+    cmd=`echo $1 | tr -s '' | sed 's,2>>.*,,' `
+    echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${DEFAULT} ${cmd}${BOLDEND}" >> $2
+    eval ${cmd}
 }
 
 function fastqfastcnt {
@@ -137,7 +162,6 @@ KEEPFILES=1
 # CPU=16
 # MEM=12294967296 # 12Gb
 # KEEPFILES=0
-# HASH='54WEVY'
 
 if test `is_set "${1}"` == 1 ; then
     usage && exit 0
@@ -146,6 +170,9 @@ fi
 for arg in "$@"
 do
     case $arg in
+        #####
+        ##### BASIC ARGUMENTS
+        #####
         -m|--mode)
         MODE="${2}"
         shift 
@@ -194,9 +221,6 @@ do
         -h|--help)
         usage && exit 0
         ;;
-        -*)
-        usage && exit 0
-        ;;
     esac
 done
 
@@ -218,7 +242,7 @@ INPUT_BASE=`basename "${INPUT}"`
 INPUT_R1="${INPUT}_R1.fastq.gz"
 INPUT_R2="${INPUT}_R2.fastq.gz"
 
-LOGFILE="${OUTDIR}/`date "+%y%m%d%H%M"`-${HASH}-log.txt"
+LOGFILE="${OUTDIR}/`date "+%y%m%d"`-${HASH}-log.txt"
 DO_INPUT=`is_set "${INPUT}"`
 DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
@@ -258,6 +282,7 @@ fi
 # Check that sample files exist
 if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
     fn_error "Sample files are missing. Check sample directory: ${SAMPLE_DIR}." 2>&1 | tee -a "${LOGFILE}"
+    fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fastq.gz & ${SAMPLE_BASE}_R1.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     usage
     rm --force "${LOGFILE}"
@@ -286,6 +311,7 @@ fi
 if test "${DO_INPUT}" == 0 ; then
     if test ! -f "${INPUT_R1}" || test ! -f "${INPUT_R2}" ; then
         fn_error "Input files are missing. Check them in ${INPUT_DIR}." 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fastq.gz & ${INPUT_BASE}_R1.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
         fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
         usage
         rm --force "${LOGFILE}"
@@ -324,7 +350,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
     fi
 fi
 
-# Check that samtools is available
+# Check that utils are available
 for util in bowtie2 samtools deeptools
 do
     if test -z `command -v "${util}"` ; then
@@ -348,7 +374,7 @@ if test "${DO_PEAKS}" == 0 ; then
 fi
 
 ## ------------------------------------------------------------------
-## -------- PREPARING RESULT DIRECTORIES AND VARIABLES --------------
+## -------- PREPARING RESULT DIRECTORIES ----------------------------
 ## ------------------------------------------------------------------
 
 mkdir -p "${OUTDIR}"/fastq/
@@ -371,6 +397,10 @@ mkdir -p "${OUTDIR}"/tracks/"${INPUT_BASE}"
 mkdir -p "${OUTDIR}"/peaks/
 mkdir -p "${OUTDIR}"/peaks/"${SAMPLE_BASE}"
 mkdir -p "${OUTDIR}"/stats/
+
+## ------------------------------------------------------------------
+## -------- PREPARING FILE NAME VARIABLES ---------------------------
+## ------------------------------------------------------------------
 
 SAMPLE_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".sam
 SAMPLE_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
@@ -414,15 +444,18 @@ if test "${MODE}" == RNA ; then
     SAMPLE_TRACK_REV="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.CPM.bw
 fi
 
+SAMTOOLS_OPTIONS=" -@ ${CPU} --output-fmt bam "
+STATFILE="${OUTDIR}/stats/sample-${SAMPLE_BASE}_input-${INPUT_BASE}_genome-${GENOME}_calibration-${SPIKEIN}_${HASH}".counts.tsv
+
 ## ------------------------------------------------------------------
-## -------- INITIATING MAPPING --------------------------------------
+## -------- PRINT STARTUP INFO --------------------------------------
 ## ------------------------------------------------------------------
 
-fn_log "Pipeline started : `date`" 2>&1 | tee "${LOGFILE}"
+fn_log "Pipeline started on `date`" 2>&1 | tee "${LOGFILE}"
 fn_log "Command   : ${INVOC}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "Hash      : ${HASH}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "Log file  : ${LOGFILE}" 2>&1 | tee -a "${LOGFILE}"
-echo -e "---" >> "${LOGFILE}"
+echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "MODE      : ${MODE}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "SAMPLE    : ${SAMPLE}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "GENOME    : ${GENOME}" 2>&1 | tee -a "${LOGFILE}"
@@ -439,87 +472,96 @@ fi
 fn_log "CPU       : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "MEM       : ${MEM}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "OUTDIR    : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
-echo -e "---" >> "${LOGFILE}"
+echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "bowtie2   : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "samtools  : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "deeptools : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "macs2     : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-echo -e "---" >> "${LOGFILE}"
+echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 
 ## ------------------------------------------------------------------
 ## ------------------- MAPPING --------------------------------------
 ## ------------------------------------------------------------------
 
 fn_log "Mapping sample reads to reference genome" 2>&1 | tee -a "${LOGFILE}"
-bowtie2 \
+cmd="bowtie2 \
     --threads "${CPU}" \
     -x "${GENOME_BASE}" \
     -1 "${SAMPLE_R1}" \
     -2 "${SAMPLE_R2}" \
     --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
-    > "${SAMPLE_ALIGNED_GENOME}" 2>> "${LOGFILE}"
+    > "${SAMPLE_ALIGNED_GENOME}"" 
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 if test "${DO_CALIBRATION}" == 0 ; then
     fn_log "Mapping sample reads to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-    bowtie2 \
+    cmd="bowtie2 \
         --threads "${CPU}" \
         -x "${SPIKEIN_BASE}" \
         -1 "${SAMPLE_R1}" \
         -2 "${SAMPLE_R2}" \
         --un-conc-gz "${SAMPLE_NON_ALIGNED_CALIBRATION}".gz \
-        > "${SAMPLE_ALIGNED_CALIBRATION}" 2>> "${LOGFILE}"
+        > "${SAMPLE_ALIGNED_CALIBRATION}""
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    
     fn_log "Mapping sample reads non-mapped on spikein genome to reference genome" 2>&1 | tee -a "${LOGFILE}"
-    bowtie2 \
+    cmd="bowtie2 \
         --threads "${CPU}" \
         -x "${GENOME_BASE}" \
         -1 "${SAMPLE_NON_ALIGNED_CALIBRATION}".1.gz \
         -2 "${SAMPLE_NON_ALIGNED_CALIBRATION}".2.gz \
-        > "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}" 2>> "${LOGFILE}"
+        > "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Mapping sample reads non-mapped on reference genome to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-    bowtie2 \
+    cmd="bowtie2 \
         --threads "${CPU}" \
         -x "${SPIKEIN_BASE}" \
         -1 "${SAMPLE_NON_ALIGNED_GENOME}".1.gz \
         -2 "${SAMPLE_NON_ALIGNED_GENOME}".2.gz \
-        > "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}" 2>> "${LOGFILE}"
+        > "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 fi
 
 if test "${DO_INPUT}" == 0 ; then
     fn_log "Mapping input reads to reference genome" 2>&1 | tee -a "${LOGFILE}"
-    bowtie2 \
+    cmd="bowtie2 \
         --threads "${CPU}" \
         -x "${GENOME_BASE}" \
         -1 "${INPUT_R1}" \
         -2 "${INPUT_R2}" \
         --un-conc-gz "${INPUT_NON_ALIGNED_GENOME}".gz \
-        > "${INPUT_ALIGNED_GENOME}" 2>> "${LOGFILE}"
+        > "${INPUT_ALIGNED_GENOME}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     if test "${DO_CALIBRATION}" == 0 ; then
         fn_log "Mapping input reads to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-        bowtie2 \
+        cmd="bowtie2 \
             --threads "${CPU}" \
             -x "${SPIKEIN_BASE}" \
             -1 "${INPUT_R1}" \
             -2 "${INPUT_R2}" \
             --un-conc-gz "${INPUT_NON_ALIGNED_CALIBRATION}".gz \
-            > "${INPUT_ALIGNED_CALIBRATION}" 2>> "${LOGFILE}"
+            > "${INPUT_ALIGNED_CALIBRATION}""
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fn_log "Mapping input reads non-mapped on spikein genome to reference genome" 2>&1 | tee -a "${LOGFILE}"
-        bowtie2 \
+        cmd="bowtie2 \
             --threads "${CPU}" \
             -x "${GENOME_BASE}" \
             -1 "${INPUT_NON_ALIGNED_CALIBRATION}".1.gz \
             -2 "${INPUT_NON_ALIGNED_CALIBRATION}".2.gz \
-            > "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}" 2>> "${LOGFILE}"
+            > "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}""
+            fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fn_log "Mapping input reads non-mapped on reference genome to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-        bowtie2 \
+        cmd="bowtie2 \
             --threads "${CPU}" \
             -x "${SPIKEIN_BASE}" \
             -1 "${INPUT_NON_ALIGNED_GENOME}".1.gz \
             -2 "${INPUT_NON_ALIGNED_GENOME}".2.gz \
-            > "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}" 2>> "${LOGFILE}"
+            > "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}""
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     fi
 
 fi
@@ -528,37 +570,31 @@ fi
 ## ------------------- FILTERING & INDEXING -------------------------
 ## ------------------------------------------------------------------
 
-# 'samtools fixmate': fixing mate annotation in bam file (does not remove any read)
-# 'samtools markdup -r': remove duplicates
-
-FILTERING_OPTIONS="-f2 -q10 -1 -b"
-# FILTERING_OPTIONS="-F4 -q5 -1 -b"
-
-# '-f 2': only retain reads that are mapped in proper pairs (i.e. both ends mapped in appropriate distance and orientation)
-# '-q 10': filter multi-mapped or low-quality reads 
-# '-b1': output is fast-compressed bam 
-
 if test "${DO_CALIBRATION}" == 1 ; then
 
     fn_log "Filtering sample bam file of reads mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
-    samtools fixmate -@ "${CPU}" --output-fmt bam -m "${SAMPLE_ALIGNED_GENOME}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -T "${HASH}"_"${SAMPLE_ALIGNED_GENOME}"_sorting - \
-        | samtools markdup -@ "${CPU}" --output-fmt bam -r -T "${HASH}"_"${SAMPLE_ALIGNED_GENOME}"_markdup - - \
-        | samtools view ${FILTERING_OPTIONS} --output-fmt bam --threads "${CPU}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -l 9 -T "${HASH}"_"${SAMPLE_ALIGNED_GENOME}"_sorting2 \
-        -o "${SAMPLE_ALIGNED_GENOME_FILTERED}"
-    samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED}" 2>> "${LOGFILE}"
+    cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${SAMPLE_ALIGNED_GENOME}" - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -T "${HASH}"_"${SAMPLE_ALIGNED_GENOME}"_sorting - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${HASH}"_"${SAMPLE_ALIGNED_GENOME}"_markdup - - \
+        | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${HASH}"_"${SAMPLE_ALIGNED_GENOME}"_sorting2 \
+        -o "${SAMPLE_ALIGNED_GENOME_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}"
+    cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     if test "${DO_INPUT}" == 0 ; then
 
         fn_log "Filtering input bam file of reads mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
-        samtools fixmate -@ "${CPU}" --output-fmt bam -m "${INPUT_ALIGNED_GENOME}" - \
-            | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -T "${HASH}"_"${INPUT_ALIGNED_GENOME}"_sorting - \
-            | samtools markdup -@ "${CPU}" --output-fmt bam -r -T "${HASH}"_"${INPUT_ALIGNED_GENOME}"_markdup - - \
-            | samtools view ${FILTERING_OPTIONS} --output-fmt bam --threads "${CPU}" - \
-            | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -l 9 -T "${HASH}"_"${INPUT_ALIGNED_GENOME}"_sorting2 \
-            -o "${INPUT_ALIGNED_GENOME_FILTERED}"
-        samtools index -@ "${CPU}" "${INPUT_ALIGNED_GENOME_FILTERED}" 2>> "${LOGFILE}"
+        cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${INPUT_ALIGNED_GENOME}" - \
+            | samtools sort ${SAMTOOLS_OPTIONS} -T "${HASH}"_"${INPUT_ALIGNED_GENOME}"_sorting - \
+            | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${HASH}"_"${INPUT_ALIGNED_GENOME}"_markdup - - \
+            | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
+            | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${HASH}"_"${INPUT_ALIGNED_GENOME}"_sorting2 \
+            -o "${INPUT_ALIGNED_GENOME_FILTERED}""
+        fn_exec "${cmd}" "${LOGFILE}"
+        cmd="samtools index -@ "${CPU}" "${INPUT_ALIGNED_GENOME_FILTERED}""
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fi
 
@@ -567,49 +603,59 @@ fi
 if test "${DO_CALIBRATION}" == 0 ; then
 
     fn_log "Filtering sample bam file of reads unmapped on spikein genome and mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
-    samtools fixmate -@ "${CPU}" --output-fmt bam -m "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -T "${HASH}"_"${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting - \
-        | samtools markdup -@ "${CPU}" --output-fmt bam -r -T "${HASH}"_"${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_markdup - - \
-        | samtools view ${FILTERING_OPTIONS} --output-fmt bam --threads "${CPU}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -l 9 -T "${HASH}"_"${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting2 \
-        -o "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}"
-    samtools index -@ "${CPU}" "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" 2>> "${LOGFILE}"
+    cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}" - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -T "${HASH}"_"${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${HASH}"_"${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_markdup - - \
+        | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${HASH}"_"${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting2 \
+        -o "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}"
+    cmd="samtools index -@ "${CPU}" "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Filtering sample bam file of reads unmapped on reference genome and mapped to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-    samtools fixmate -@ "${CPU}" --output-fmt bam -m "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -T "${HASH}"_"${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting - \
-        | samtools markdup -@ "${CPU}" --output-fmt bam -r -T "${HASH}"_"${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_markdup - - \
-        | samtools view ${FILTERING_OPTIONS} --output-fmt bam --threads "${CPU}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -l 9 -T "${HASH}"_"${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting2 \
-        -o "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}"
-    samtools index -@ "${CPU}" "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}" 2>> "${LOGFILE}"
+    cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}" - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -T "${HASH}"_"${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${HASH}"_"${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_markdup - - \
+        | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${HASH}"_"${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting2 \
+        -o "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}"
+    cmd="samtools index -@ "${CPU}" "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Filtering input bam file of reads unmapped on spikein genome and mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
-    samtools fixmate -@ "${CPU}" --output-fmt bam -m "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -T "${HASH}"_"${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting - \
-        | samtools markdup -@ "${CPU}" --output-fmt bam -r -T "${HASH}"_"${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_markdup - - \
-        | samtools view ${FILTERING_OPTIONS} --output-fmt bam --threads "${CPU}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -l 9 -T "${HASH}"_"${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting2 \
-        -o "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}"
-    samtools index -@ "${CPU}" "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" 2>> "${LOGFILE}"
+    cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}" - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -T "${HASH}"_"${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${HASH}"_"${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_markdup - - \
+        | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${HASH}"_"${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting2 \
+        -o "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}"
+    cmd="samtools index -@ "${CPU}" "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Filtering input bam file of reads unmapped on reference genome and mapped to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-    samtools fixmate -@ "${CPU}" --output-fmt bam -m "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -T "${HASH}"_"${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting - \
-        | samtools markdup -@ "${CPU}" --output-fmt bam -r -T "${HASH}"_"${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_markdup - - \
-        | samtools view ${FILTERING_OPTIONS} --output-fmt bam --threads "${CPU}" - \
-        | samtools sort -@ "${CPU}" -m "${MEM}" --output-fmt bam -l 9 -T "${HASH}"_"${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting2 \
-        -o "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}"
-    samtools index -@ "${CPU}" "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}" 2>> "${LOGFILE}"
+    cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}" - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -T "${HASH}"_"${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${HASH}"_"${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_markdup - - \
+        | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${HASH}"_"${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting2 \
+        -o "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}"
+    cmd="samtools index -@ "${CPU}" "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 fi
 
 if test "${MODE}" == MNase ; then 
     fn_log "Further filtering sample bam file of reads mapped to reference genome for fragment size (70-250 bp)" 2>&1 | tee -a "${LOGFILE}"
-    samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
+    cmd="samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
         | mawk '/^@/ || (sqrt(($9^2)) > 70 && sqrt(($9^2)) < 250)' \
-        | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}"
-    samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}" 2>> "${LOGFILE}"
+        | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
+    fn_exec "${cmd}" "${LOGFILE}"
+    cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 fi
 
 ## ------------------------------------------------------------------
@@ -619,7 +665,6 @@ fi
 if test "${DO_CALIBRATION}" == 0 ; then
 
     fn_log "Calculating scaling factor for spikein-based normalization of ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
-    STATFILE="${OUTDIR}/stats/sample-${SAMPLE_BASE}_input-${INPUT_BASE}_genome-${GENOME}_calibration-${SPIKEIN}_${HASH}".counts.tsv
     N_SAMPLE_GENOME=`samtools flagstat "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" | grep 'paired in sequencing' | sed 's, .*,,'`
     N_INPUT_GENOME=`samtools flagstat "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" | grep 'paired in sequencing' | sed 's, .*,,'`
     N_SAMPLE_SPIKEIN=`samtools flagstat "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}" | grep 'paired in sequencing' | sed 's, .*,,'`
@@ -642,7 +687,7 @@ fi
 if test "${DO_CALIBRATION}" == 1 ; then
 
     fn_log "Generating CPM track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
-    bamCoverage \
+    cmd="bamCoverage \
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
         --outFileName "${SAMPLE_RAW_TRACK}" \
         --binSize 1 \
@@ -650,12 +695,13 @@ if test "${DO_CALIBRATION}" == 1 ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates 2>> "${LOGFILE}"
+        --ignoreDuplicates"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     if test "${DO_INPUT}" == 0 ; then
 
         fn_log "Generating CPM track for ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
-        bamCoverage \
+        cmd="bamCoverage \
             --bam "${INPUT_ALIGNED_GENOME_FILTERED}" \
             --outFileName "${INPUT_RAW_TRACK}" \
             --binSize 1 \
@@ -663,10 +709,11 @@ if test "${DO_CALIBRATION}" == 1 ; then
             --normalizeUsing CPM \
             --skipNonCoveredRegions \
             --extendReads \
-            --ignoreDuplicates 2>> "${LOGFILE}"
+            --ignoreDuplicates"
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fn_log "Generating track for ${SAMPLE_BASE} divided by ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
-        bamCompare \
+        cmd="bamCompare \
             -b1 "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
             -b2 "${INPUT_ALIGNED_GENOME_FILTERED}" \
             --outFileName "${SAMPLE_INPUT_TRACK}" \
@@ -677,7 +724,8 @@ if test "${DO_CALIBRATION}" == 1 ; then
             --numberOfProcessors "${CPU}" \
             --binSize 5 \
             --skipNonCoveredRegions \
-            --ignoreDuplicates 2>> "${LOGFILE}"
+            --ignoreDuplicates"
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fi
 
@@ -686,7 +734,7 @@ fi
 if test "${DO_CALIBRATION}" == 0 ; then
 
     fn_log "Generating CPM track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
-    bamCoverage \
+    cmd="bamCoverage \
         --bam "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
         --outFileName "${SAMPLE_RAW_TRACK}" \
         --binSize 1 \
@@ -694,23 +742,23 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates 2>> "${LOGFILE}"
+        --ignoreDuplicates"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
-    if test "${DO_INPUT}" == 0 ; then
-
-        fn_log "Generating CPM track for ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
-        bamCoverage \
-            --bam "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
-            --outFileName "${INPUT_RAW_TRACK}" \
-            --binSize 1 \
-            --numberOfProcessors "${CPU}" \
-            --normalizeUsing CPM \
-            --skipNonCoveredRegions \
-            --extendReads \
-            --ignoreDuplicates 2>> "${LOGFILE}"
+    fn_log "Generating CPM track for ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
+    cmd="bamCoverage \
+        --bam "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
+        --outFileName "${INPUT_RAW_TRACK}" \
+        --binSize 1 \
+        --numberOfProcessors "${CPU}" \
+        --normalizeUsing CPM \
+        --skipNonCoveredRegions \
+        --extendReads \
+        --ignoreDuplicates"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating track for ${SAMPLE_BASE} divided by ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
-    bamCompare \
+    cmd="bamCompare \
         -b1 "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
         -b2 "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
         --outFileName "${SAMPLE_INPUT_TRACK}" \
@@ -721,12 +769,11 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --numberOfProcessors "${CPU}" \
         --binSize 5 \
         --skipNonCoveredRegions \
-        --ignoreDuplicates 2>> "${LOGFILE}"
-
-    fi
+        --ignoreDuplicates"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating CPM track for ${SAMPLE_BASE} scaled by spikein-derived factor (ORI)" 2>&1 | tee -a "${LOGFILE}"
-    bamCoverage \
+    cmd="bamCoverage \
         --bam "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
         --outFileName "${SAMPLE_SPIKEINSCALED_TRACK}" \
         --binSize 1 \
@@ -735,14 +782,15 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --scaleFactor "${SCALING_FACTOR}" \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates 2>> "${LOGFILE}"
+        --ignoreDuplicates"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 fi
 
 if test "${MODE}" == MNase ; then 
 
     fn_log "Generating CPM track for ${SAMPLE_BASE} filtered for reads >70bp & <250bp" 2>&1 | tee -a "${LOGFILE}"
-    bamCoverage \
+    cmd="bamCoverage \
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}" \
         --outFileName "${SAMPLE_READSIZE_TRACK}" \
         --binSize 1 \
@@ -750,10 +798,11 @@ if test "${MODE}" == MNase ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates 2>> "${LOGFILE}"
-    
+        --ignoreDuplicates"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
     fn_log "Generating nucleosome positioning track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
-    bamCoverage \
+    cmd="bamCoverage \
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}" \
         --outFileName "${SAMPLE_NUCPOS_TRACK}" \
         --binSize 1 \
@@ -762,14 +811,15 @@ if test "${MODE}" == MNase ; then
         --skipNonCoveredRegions \
         --extendReads \
         --ignoreDuplicates \
-        --MNase 2>> "${LOGFILE}"
+        --MNase"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 fi
 
 if test "${MODE}" == RNA ; then 
 
     fn_log "Generating forward track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
-    bamCoverage \
+    cmd="bamCoverage \
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
         --outFileName "${SAMPLE_TRACK_FWD}" \
         --binSize 1 \
@@ -778,10 +828,11 @@ if test "${MODE}" == RNA ; then
         --skipNonCoveredRegions \
         --extendReads \
         --ignoreDuplicates \
-        --filterRNAstrand forward 2>> "${LOGFILE}"
+        --filterRNAstrand forward"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating reverse track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
-    bamCoverage \
+    cmd="bamCoverage \
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
         --outFileName "${SAMPLE_TRACK_REV}" \
         --binSize 1 \
@@ -790,7 +841,8 @@ if test "${MODE}" == RNA ; then
         --skipNonCoveredRegions \
         --extendReads \
         --ignoreDuplicates \
-        --filterRNAstrand reverse 2>> "${LOGFILE}"
+        --filterRNAstrand reverse"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 fi
 
@@ -804,25 +856,27 @@ if test "${DO_PEAKS}" == 0 && test "${DO_INPUT}" == 1 ; then
 
     if test "${DO_INPUT}" == 1 ; then
 
-        macs2 callpeak \
+        cmd="macs2 callpeak \
             -t "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
             --format BAMPE \
             --gsize 13000000 \
             --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
-            --name "${SAMPLE_BASE}_genome-${GENOME}_${HASH}" 2>> "${LOGFILE}"
-    
+            --name "${SAMPLE_BASE}_genome-${GENOME}_${HASH}""
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
     fi 
 
     if test "${DO_INPUT}" == 0 ; then
 
-        macs2 callpeak \
+        cmd="macs2 callpeak \
             -t "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
             -c "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
             --format BAMPE \
             --gsize 13000000 \
             --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
-            --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}" 2>> "${LOGFILE}"
-    
+            --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}""
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
     fi 
 
 fi
@@ -845,7 +899,8 @@ fi
 for file in ${files}
 do
     fn_log "MAPPING STATS: ${file}" >> "${LOGFILE}"
-    samtools flagstat "${file}" >> "${LOGFILE}"
+    cmd="samtools flagstat "${file}" >> "${LOGFILE}""
+    fn_exec "${cmd}" "${LOGFILE}"
     echo -e "---" >> "${LOGFILE}"
 done
 
@@ -886,18 +941,25 @@ fi
 
 ## -- Back up script file
 fn_log "Backing up pipeline script" 2>&1 | tee -a "${LOGFILE}"
-cp "${BASH_SOURCE}" "${OUTDIR}"/`date "+%y%m%d%H%M"`-"${HASH}"-script.txt
-chmod -x "${OUTDIR}"/`date "+%y%m%d%H%M"`-"${HASH}"-script.txt
+cp "${BASH_SOURCE}" "${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-script.txt
+chmod -x "${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-script.txt
 
 ## -- List generated files
-echo -e "---" >> "${LOGFILE}"
+echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "GENERATED FILES" >> "${LOGFILE}"
 tree "${OUTDIR}" -P "*${HASH}*" --prune 2>&1 | tee -a "${LOGFILE}"
-echo -e "---" >> "${LOGFILE}"
+
+## -- List commands
+echo -e "---" 2>&1 | tee -a "${LOGFILE}"
+fn_log "COMMANDS EXECUTED" >> "${LOGFILE}"
+grep '\[EXEC\]' "${LOGFILE}" | sed 's,.*\[EXEC\] ,,' | sed 's,| ,\\\n\t| ,g' > "${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-commands.txt
+grep '\[EXEC\]' "${LOGFILE}" | sed 's,.*\[EXEC\] ,,' | sed 's,| ,\\\n\t| ,g' >> "${LOGFILE}"
 
 ## -- Done !
+echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "Pipeline achieved: `date`" 2>&1 | tee -a "${LOGFILE}"
 echo -e "Do check the log file ("${LOGFILE}") to make sure everything went ok!"
+echo -e "You can re-run the commands by running \`./"${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-commands.txt\`."
 
 ## -- Remove color decorators from log file
 sed -i 's/\x1b\[[0-9;]*m//g' "${LOGFILE}"
