@@ -17,7 +17,10 @@ The main steps are:
     - For Mase: extra track for nucleosome positions
     - For RNA-seq: directed tracks (`fwd` and `rev` transcription)
 - Extract some *very* succint stats on mapping results
-- Keep everything tidy, organized, documented and reproducible.
+- Keep everything tidy, organized, documented and reproducible. Notably, when running `tinyMapper.sh`, three files are generated: 
+    - `*-log.txt`: A detailed `log` file
+    - `*-commands.txt`: A list of the actual commands that were executed in the pipeline
+    - `*-script.txt`: A backup copy of the `tinyMapper.sh` entire script as it was at the time of the execution
 
 **DISCLAIMER:** 
 
@@ -44,16 +47,26 @@ Just download `tinyMapper.sh` script and use it!
 ```
 Usage: tinyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> | -c <CALIBRATION> | -t <THREADS> | -M <MEMORY> | -k <1, 0> ]
 
-      -m | --mode                 Mapping mode ('ChIP', 'MNase', 'ATAC', 'RNA') (Default: ChIP)
-      -s | --sample               Path prefix to sample <SAMPLE>_R*.fastq.gz (e.g. for ~/reads/JS001_R*.fastq.gz files: --sample ~/reads/JS001)
-      -g | --genome               Path prefix to reference genome (e.g. for ~/genome/W303/W303.fa fasta file: --genome ~/genome/W303/W303)
-      -o | --output               Path to store results (Default: "./results/)
-      -i | --input                (Optional) Path prefix to input <INPUT>_R*.fastq.gz
-      -c | --calibration          (Optional) Path prefix to genome used for calibration
-      -t | --threads              (Optional) Number of threads (Default: 8)
-      -M | --memory               (Optional) Memory in bits (Default: 12294967296, which is 12Gb)
-      -k | --keepIntermediate     (Optional) Keep intermediate mapping files (Default: 1 (i.e. 'false'))
-      -h | --help                 Print this message
+    ---------------
+    BASIC ARGUMENTS
+
+       -m | --mode                 Mapping mode (ChIP, MNase, ATAC, RNA) (Default: ChIP)
+       -s | --sample               Path prefix to sample <SAMPLE>_R*.fastq.gz (e.g. for ~/reads/JS001_R*.fastq.gz files: --sample ~/reads/JS001)
+       -g | --genome               Path prefix to reference genome (e.g. for ~/genome/W303/W303.fa fasta file: --genome ~/genome/W303/W303)
+       -o | --output               Path to store results (Default: ./results/)
+       -i | --input                (Optional) Path prefix to input <INPUT>_R*.fastq.gz
+       -c | --calibration          (Optional) Path prefix to genome used for calibration
+       -t | --threads              (Optional) Number of threads (Default: 8)
+       -M | --memory               (Optional) Memory in bits (Default: 12294967296, which is 12Gb)
+       -k | --keepIntermediate     (Optional) Keep intermediate mapping files (Default: 1 (i.e. 'false'))
+       -h | --help                 Print this message
+
+    ------------------
+    ADVANCED ARGUMENTS
+
+       -f | --filter               Filtering options for \`samtools view\` (between single quotes)
+                                   Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)
+       -d | --duplicates           Keep duplicate reads
 ```
 
 Note that fastq files *MUST* be named following this convention:
@@ -107,10 +120,3 @@ Note that fastq files *MUST* be named following this convention:
 ### Acknowledgments
 
 Many thanks to H. Bordelet for sharing her mapping scripts and configuration. 
-
-### To do
-
-- Allow to specify filtering options in `samtools view`
-- Allow to specify whether duplicates should be removed or not
-- Keep track of each command that was run to save them in the log file.
-- Allow different filtering of MNase fragment sizes
