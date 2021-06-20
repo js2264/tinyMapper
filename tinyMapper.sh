@@ -12,20 +12,19 @@ function usage() {
     echo -e "# J. Serizay, C. Matthey-Doret, H. Bordelet"
     echo -e "# GPL-3.0"
     echo -e ""
-    echo -e "Usage: tidyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> | -c <CALIBRATION> | -t <THREADS> | -M <MEMORY> | -k ]"
+    echo -e "Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --outdir <OUTPUT> [ additional arguments ]"
     echo -e ""
     echo -e "-------------------------------"
     echo -e ""
     echo -e "   BASIC ARGUMENTS"
     echo -e ""
-    echo -e "      -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA) (Default: ChIP)"
+    echo -e "      -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)"
     echo -e "      -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)"
     echo -e "      -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)"
     echo -e "      -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)"
     echo -e "      -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`"
     echo -e "      -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
     echo -e "      -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)"
-    echo -e "      -M|--memory <MEMORY>             (Optional) Memory in bits (Default: 12294967296, which is 12Gb)"
     echo -e "      -k|--keepIntermediate            (Optional) Keep intermediate mapping files"
     echo -e "      -h|--help                        Print this message"
     echo -e ""
@@ -36,6 +35,9 @@ function usage() {
     echo -e "      -f|--filter <FILTER>      Filtering options for \`samtools view\` (between single quotes)"
     echo -e "                                Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)"
     echo -e "      -d|--duplicates           Keep duplicate reads"
+    echo -e "      -hic|--hicstuff <OPT>     Additional arguments passed to hicstuff (default: \`--iterative --duplicates --filter --plot\`)"
+    echo -e "      -r|--resolutions <#>      Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')"
+    echo -e "      -re|--restriction <RE>    Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)"
     echo -e ""
     echo -e "-------------------------------"
     echo -e ""
@@ -43,17 +45,21 @@ function usage() {
     echo -e ""
     echo -e "   ChIP-seq mode:"
     echo -e ""
-    echo -e "      Without input:               ./tidyMapper.sh -m ChIP -s ~/HB44 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results"
-    echo -e "      With input:                  ./tidyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results"
-    echo -e "      With input and calibration:  ./tidyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -c ~/genomes/Cglabrata/Cglabrata -o ~/results"
+    echo -e "      Without input:               ./tinyMapper.sh -m ChIP -s ~/HB44 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results"
+    echo -e "      With input:                  ./tinyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results"
+    echo -e "      With input and calibration:  ./tinyMapper.sh -m ChIP -s ~/HB44 -i ~/HB42 -g ~/genomes/R64-1-1/R64-1-1 -c ~/genomes/Cglabrata/Cglabrata -o ~/results"
     echo -e ""
     echo -e "   RNA-seq mode:"
     echo -e ""
-    echo -e "      ./tidyMapper.sh -m RNA -s ~/AB4 -g ~/genomes/W303/W303 -o ~/results"
+    echo -e "      ./tinyMapper.sh -m RNA -s ~/AB4 -g ~/genomes/W303/W303 -o ~/results"
     echo -e ""
     echo -e "   MNase-seq mode:"
     echo -e ""
-    echo -e "      ./tidyMapper.sh -m MNase -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results"
+    echo -e "      ./tinyMapper.sh -m MNase -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results"
+    echo -e ""
+    echo -e "   HiC mode (through hicstuff):"
+    echo -e ""
+    echo -e "      ./tinyMapper.sh -m HiC -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results --resolutions 1000,2000,4000 --restriction 'DpnII,HinfI'"
     echo -e ""
     echo -e "-------------------------------"
     echo -e ""
@@ -62,7 +68,9 @@ function usage() {
     echo -e "   bowtie2"
     echo -e "   samtools"
     echo -e "   deeptools"
-    echo -e "   macs2"
+    echo -e "   macs2 (for ChIP/ATAC)"
+    echo -e "   hicstuff (for HiC)"
+    echo -e "   cooler (for HiC)"
     echo -e ""
 }
 
@@ -78,8 +86,8 @@ function fn_log {
     RED="\e[31m"
     BLUE="\e[96m"
     YELLOW="\e[33m"
-    DEFAULT="\e[39m"
-    echo -e "${BOLD}${BLUE}${date} | ${GREEN}[INFO]${DEFAULT} $@${BOLDEND}"
+    DEFAULT="\e[97m"
+    echo -e "${BOLD}${BLUE}${date} | ${GREEN}[INFO]${DEFAULT}${BOLDEND} $@"
 }
 
 function fn_error {
@@ -90,8 +98,8 @@ function fn_error {
     RED="\e[31m"
     BLUE="\e[96m"
     YELLOW="\e[33m"
-    DEFAULT="\e[39m"
-    echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${DEFAULT} $@${BOLDEND}"
+    DEFAULT="\e[97m"
+    echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${DEFAULT}${BOLDEND} $@"
 }
 
 function fn_warning {
@@ -103,8 +111,8 @@ function fn_warning {
     ORANGE="\e[38;5;208m"
     BLUE="\e[96m"
     YELLOW="\e[33m"
-    DEFAULT="\e[39m"
-    echo -e "${BOLD}${BLUE}${date} | ${ORANGE}[WAR.]${DEFAULT} $@${BOLDEND}"
+    DEFAULT="\e[97m"
+    echo -e "${BOLD}${BLUE}${date} | ${ORANGE}[WAR.]${DEFAULT}${BOLDEND} $@"
 }
 
 function fn_exec {
@@ -115,9 +123,11 @@ function fn_exec {
     RED="\e[31m"
     BLUE="\e[96m"
     YELLOW="\e[33m"
-    DEFAULT="\e[39m"
+    DEFAULT="\e[97m"
     cmd=`echo $1 | tr -s '' | sed 's,2>>.*,,' `
-    echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${DEFAULT} ${cmd}${BOLDEND}" >> $2
+    if test `is_set $2` == 0 ; then 
+        echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${DEFAULT}${BOLDEND} ${cmd}" >> $2
+    fi
     eval ${cmd}
 }
 
@@ -148,10 +158,14 @@ GENOME=''
 SPIKEIN=''
 OUTDIR='results'
 FILTEROPTIONS='-f 2 -q 10'
+HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
+HICREZ='10000,20000,40000,160000,1280000'
+RE=' DpnII,HinfI '
 KEEPDUPLICATES=1
 KEEPFILES=1
 CPU=16
-MEM=12294967296 # 12Gb
+
+# Custom values for test
 
 # MODE=ChIP
 # SAMPLE=HB44
@@ -162,7 +176,12 @@ MEM=12294967296 # 12Gb
 # FILTEROPTIONS='-F 4 -q 5'
 # KEEPDUPLICATES=0
 # CPU=16
-# MEM=12294967296 # 12Gb
+# KEEPFILES=0
+
+# MODE=HiC
+# SAMPLE=test
+# GENOME=~/genomes/W303/W303
+# HICREZ='1000,2000,4000,8000'
 # KEEPFILES=0
 
 if test `is_set "${1}"` == 1 ; then
@@ -213,6 +232,21 @@ do
         shift 
         shift 
         ;;
+        -hic|--hicstuff)
+        HICSTUFFOPTIONS=${2}
+        shift 
+        shift 
+        ;;
+        -re|--restriction)
+        RE=${2}
+        shift 
+        shift 
+        ;;
+        -r|--resolutions)
+        HICREZ=${2}
+        shift 
+        shift 
+        ;;
         -d|--duplicates)
         KEEPDUPLICATES=0
         shift 
@@ -222,11 +256,6 @@ do
         #####
         -t|--threads)
         CPU="${2}"
-        shift 
-        shift 
-        ;;
-        -M|--memory)
-        MEM="${2}"
         shift 
         shift 
         ;;
@@ -240,6 +269,11 @@ do
     esac
 done
 
+## ------------------------------------------------------------------
+## -------- PREPARING VARIABLES -------------------------------------
+## ------------------------------------------------------------------
+
+# - Genome(s) variable
 GENOME_DIR=`dirname "${GENOME}"`
 GENOME=`basename "${GENOME}"`
 GENOME_BASE="${GENOME_DIR}"/"${GENOME}"
@@ -249,6 +283,7 @@ SPIKEIN=`basename "${SPIKEIN}"`
 SPIKEIN_BASE="${SPIKEIN_DIR}"/"${SPIKEIN}"
 SPIKEIN_FA="${SPIKEIN_BASE}.fa"
 
+# - Sample (input) variable
 SAMPLE_DIR=`dirname "${SAMPLE}"`
 SAMPLE_BASE=`basename "${SAMPLE}"`
 SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
@@ -258,25 +293,77 @@ INPUT_BASE=`basename "${INPUT}"`
 INPUT_R1="${INPUT}_R1.fastq.gz"
 INPUT_R2="${INPUT}_R2.fastq.gz"
 
+# - Specific files
+STATFILE="${OUTDIR}/stats/sample-${SAMPLE_BASE}_input-${INPUT_BASE}_genome-${GENOME}_calibration-${SPIKEIN}_${HASH}".counts.tsv
 LOGFILE="${OUTDIR}/`date "+%y%m%d"`-${HASH}-log.txt"
+CMDFILE="${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-commands.txt
+
+# - Advanced options
+SAMTOOLS_OPTIONS=" -@ ${CPU} --output-fmt bam "
 DO_INPUT=`is_set "${INPUT}"`
 DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
 REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " -r " ; else echo " " ; fi`
+FIRSTREZ=`echo "${HICREZ}" | sed 's/,.*//' | sed 's,000$,kb,'`
+
+# - Bam file names
+SAMPLE_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".sam
+SAMPLE_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
+SAMPLE_NON_ALIGNED_GENOME="${OUTDIR}"/fastq/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${GENOME}"^"${HASH}"
+SAMPLE_ALIGNED_CALIBRATION="${OUTDIR}"/bam/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${SPIKEIN}"^"${HASH}".sam
+SAMPLE_NON_ALIGNED_CALIBRATION="${OUTDIR}"/fastq/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"
+SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION="${OUTDIR}"/bam/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${GENOME}"^mapped_"${SPIKEIN}"^"${HASH}".sam
+SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".sam
+SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED="${OUTDIR}"/bam/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${GENOME}"^mapped_"${SPIKEIN}"^filtered^"${HASH}".bam
+SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
+INPUT_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${GENOME}"^"${HASH}".sam
+INPUT_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
+INPUT_NON_ALIGNED_GENOME="${OUTDIR}"/fastq/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^"${HASH}"
+INPUT_ALIGNED_CALIBRATION="${OUTDIR}"/bam/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${SPIKEIN}"^"${HASH}".sam
+INPUT_NON_ALIGNED_CALIBRATION="${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"
+INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION="${OUTDIR}"/bam/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^mapped_"${SPIKEIN}"^"${HASH}".sam
+INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".sam
+INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED="${OUTDIR}"/bam/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^mapped_"${SPIKEIN}"^filtered^"${HASH}".bam
+INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
+
+# - Track file names
+SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
+INPUT_RAW_TRACK="${OUTDIR}"/tracks/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
+SAMPLE_INPUT_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".vs-"${INPUT_BASE}".bw
+
+if test "${DO_CALIBRATION}" == 0 ; then
+    SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
+    INPUT_RAW_TRACK="${OUTDIR}"/tracks/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
+    SAMPLE_INPUT_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".vs-"${INPUT_BASE}".bw
+    SAMPLE_SPIKEINSCALED_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.calibrated.bw
+fi
+
+if test "${MODE}" == MNase ; then 
+    SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".bam
+    SAMPLE_READSIZE_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".70-250.CPM.bw
+    SAMPLE_NUCPOS_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".nucpos.CPM.bw
+fi
+
+if test "${MODE}" == RNA ; then 
+    SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".unstranded.CPM.bw
+    SAMPLE_TRACK_FWD="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.CPM.bw
+    SAMPLE_TRACK_REV="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.CPM.bw
+fi
+
+# - HiC-related file names
+if test "${MODE}" == HiC ; then 
+    SAMPLE_ALIGNED_GENOME_FWD="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.bam
+    SAMPLE_ALIGNED_GENOME_REV="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.bam
+    SAMPLE_MATRIX=matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}"
+    SAMPLE_MCOOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".mcool
+fi
+
+mkdir -p "${OUTDIR}"
+touch "${LOGFILE}"
 
 ## ------------------------------------------------------------------
 ## -------- CHECKING THAT REQUIRED FILES EXIST ----------------------
 ## ------------------------------------------------------------------
-
-# Check the OUTDIR already exists
-# if test -d "${OUTDIR}" ; then
-#     fn_error "Output directory already exists (${OUTDIR}). Please erase or choose another directory to store output files."
-#     fn_error "Aborting now."
-#     exit 1
-# fi
-
-mkdir -p "${OUTDIR}"
-touch "${LOGFILE}"
 
 # Abort if trying to calibrate without input
 if test "${DO_INPUT}" == 1 && test "${DO_CALIBRATION}" == 0 ; then
@@ -390,6 +477,17 @@ if test "${DO_PEAKS}" == 0 ; then
     fi
 fi
 
+if test "${MODE}" == HiC ; then
+    util=hicstuff
+    if test -z `command -v "${util}"` ; then
+        fn_error "${util} does not seem to be installed or loaded. Install it as follows:" 2>&1 | tee -a "${LOGFILE}"
+        echo -e "pip install -U ${util}" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
+    fi
+fi
+
 ## ------------------------------------------------------------------
 ## -------- PREPARING RESULT DIRECTORIES ----------------------------
 ## ------------------------------------------------------------------
@@ -413,56 +511,11 @@ mkdir -p "${OUTDIR}"/tracks/"${SAMPLE_BASE}"
 mkdir -p "${OUTDIR}"/tracks/"${INPUT_BASE}"
 mkdir -p "${OUTDIR}"/peaks/
 mkdir -p "${OUTDIR}"/peaks/"${SAMPLE_BASE}"
+mkdir -p "${OUTDIR}"/matrices/
+mkdir -p "${OUTDIR}"/matrices/"${SAMPLE_BASE}"/
+mkdir -p "${OUTDIR}"/pairs/
+mkdir -p "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/
 mkdir -p "${OUTDIR}"/stats/
-
-## ------------------------------------------------------------------
-## -------- PREPARING FILE NAME VARIABLES ---------------------------
-## ------------------------------------------------------------------
-
-SAMPLE_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".sam
-SAMPLE_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
-SAMPLE_NON_ALIGNED_GENOME="${OUTDIR}"/fastq/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${GENOME}"^"${HASH}"
-SAMPLE_ALIGNED_CALIBRATION="${OUTDIR}"/bam/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${SPIKEIN}"^"${HASH}".sam
-SAMPLE_NON_ALIGNED_CALIBRATION="${OUTDIR}"/fastq/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"
-SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION="${OUTDIR}"/bam/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${GENOME}"^mapped_"${SPIKEIN}"^"${HASH}".sam
-SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".sam
-SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED="${OUTDIR}"/bam/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${GENOME}"^mapped_"${SPIKEIN}"^filtered^"${HASH}".bam
-SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
-INPUT_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${GENOME}"^"${HASH}".sam
-INPUT_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
-INPUT_NON_ALIGNED_GENOME="${OUTDIR}"/fastq/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^"${HASH}"
-INPUT_ALIGNED_CALIBRATION="${OUTDIR}"/bam/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${SPIKEIN}"^"${HASH}".sam
-INPUT_NON_ALIGNED_CALIBRATION="${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"
-INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION="${OUTDIR}"/bam/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^mapped_"${SPIKEIN}"^"${HASH}".sam
-INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".sam
-INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED="${OUTDIR}"/bam/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^mapped_"${SPIKEIN}"^filtered^"${HASH}".bam
-INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^filtered^"${HASH}".bam
-
-if test "${DO_CALIBRATION}" == 1 ; then
-    SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
-    INPUT_RAW_TRACK="${OUTDIR}"/tracks/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
-    SAMPLE_INPUT_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".vs-"${INPUT_BASE}".bw
-else
-    SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
-    INPUT_RAW_TRACK="${OUTDIR}"/tracks/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
-    SAMPLE_INPUT_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".vs-"${INPUT_BASE}".bw
-    SAMPLE_SPIKEINSCALED_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.calibrated.bw
-fi
-
-if test "${MODE}" == MNase ; then 
-    SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".bam
-    SAMPLE_READSIZE_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".70-250.CPM.bw
-    SAMPLE_NUCPOS_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".nucpos.CPM.bw
-fi
-
-if test "${MODE}" == RNA ; then 
-    SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".unstranded.CPM.bw
-    SAMPLE_TRACK_FWD="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.CPM.bw
-    SAMPLE_TRACK_REV="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.CPM.bw
-fi
-
-SAMTOOLS_OPTIONS=" -@ ${CPU} --output-fmt bam "
-STATFILE="${OUTDIR}/stats/sample-${SAMPLE_BASE}_input-${INPUT_BASE}_genome-${GENOME}_calibration-${SPIKEIN}_${HASH}".counts.tsv
 
 ## ------------------------------------------------------------------
 ## -------- PRINT STARTUP INFO --------------------------------------
@@ -489,18 +542,67 @@ fi
 fn_log "Keep dups.: `if test ${KEEPDUPLICATES} == 0 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
 fn_log "Filt. opt.: ${FILTEROPTIONS}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "CPU       : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "MEM       : ${MEM}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "OUTDIR    : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "bowtie2   : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "samtools  : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "deeptools : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "macs2     : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "hicstuff  : `type -P hicstuff` (version: `hicstuff --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "cooler    : `type -P cooler` (version: `cooler --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
+
+## ------------------------------------------------------------------
+## ------------------- RUN HICSTUFF ---------------------------------
+## ------------------------------------------------------------------
+
+if test "${MODE}" == HiC ; then
+
+    mkdir -p "${OUTDIR}"/tmp/
+    cp "${GENOME_BASE}".fa "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta
+    cp "${GENOME_BASE}".1.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.1.bt2
+    cp "${GENOME_BASE}".2.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.2.bt2
+    cp "${GENOME_BASE}".3.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.3.bt2
+    cp "${GENOME_BASE}".4.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.4.bt2
+    cp "${GENOME_BASE}".rev.1.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.rev.1.bt2
+    cp "${GENOME_BASE}".rev.2.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.rev.2.bt2
+
+    fn_log "Processing sample reads with hicstuff" 2>&1 | tee -a "${LOGFILE}"
+    cmd="hicstuff pipeline \
+        --threads "${CPU}" \
+        --enzyme "${RE}" \
+        --outdir "${OUTDIR}" \
+        --prefix "${SAMPLE_BASE}" \
+        "${HICSTUFFOPTIONS}" --force \
+        --matfmt cool \
+        --genome "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta \
+        "${SAMPLE_R1}" "${SAMPLE_R2}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+    fn_log "Binning cool file to ${FIRSTREZ} bp" 2>&1 | tee -a "${LOGFILE}"
+    cmd="hicstuff rebin \
+        --binning "${FIRSTREZ}" \
+        --frags "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv \
+        --chroms "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv \
+        --force \
+        "${OUTDIR}"/"${SAMPLE_BASE}".cool \
+        "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+    fn_log "Generating .mcool file" 2>&1 | tee -a "${LOGFILE}"
+    cmd="cooler zoomify \
+        --nproc "${CPU}" \
+        --resolutions "${HICREZ}" \
+        --balance \
+        --out "${SAMPLE_MCOOL}" \
+        "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 ## ------------------------------------------------------------------
 ## ------------------- MAPPING --------------------------------------
 ## ------------------------------------------------------------------
+
+else 
 
 fn_log "Mapping sample reads to reference genome" 2>&1 | tee -a "${LOGFILE}"
 cmd="bowtie2 \
@@ -510,7 +612,7 @@ cmd="bowtie2 \
     -2 "${SAMPLE_R2}" \
     --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
     > "${SAMPLE_ALIGNED_GENOME}"" 
-    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 if test "${DO_CALIBRATION}" == 0 ; then
     fn_log "Mapping sample reads to spikein genome" 2>&1 | tee -a "${LOGFILE}"
@@ -589,7 +691,7 @@ fi
 ## ------------------- FILTERING & INDEXING -------------------------
 ## ------------------------------------------------------------------
 
-if test "${DO_CALIBRATION}" == 1 ; then
+if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
 
     fn_log "Filtering sample bam file of reads mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${SAMPLE_ALIGNED_GENOME}" - \
@@ -703,7 +805,7 @@ fi
 ## ------------------- TRACKS ---------------------------------------
 ## ------------------------------------------------------------------
 
-if test "${DO_CALIBRATION}" == 1 ; then
+if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
 
     fn_log "Generating CPM track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
     cmd="bamCoverage \
@@ -900,6 +1002,8 @@ if test "${DO_PEAKS}" == 0 && test "${DO_INPUT}" == 1 ; then
 
 fi
 
+fi # ------------------------------------- Exit HiC if statement
+
 ## ------------------------------------------------------------------
 ## ------------------- CHECK NB OF READS ----------------------------
 ## ------------------------------------------------------------------
@@ -911,15 +1015,16 @@ echo -e "---" >> "${LOGFILE}"
 
 if test "${DO_CALIBRATION}" == 0 ; then
     files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" 
-else
+elif test "${MODE}" == HiC ; then
+    files="${OUTDIR}/tmp/${SAMPLE_BASE}.for.bam ${OUTDIR}/tmp/${SAMPLE_BASE}.rev.bam"
+else 
     files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_ALIGNED_GENOME_FILTERED}"
 fi
 
 for file in ${files}
 do
     fn_log "MAPPING STATS: ${file}" >> "${LOGFILE}"
-    cmd="samtools flagstat "${file}" >> "${LOGFILE}""
-    fn_exec "${cmd}" "${LOGFILE}"
+    samtools flagstat "${file}" 2>&1 | tee -a "${LOGFILE}"
     echo -e "---" >> "${LOGFILE}"
 done
 
@@ -933,6 +1038,20 @@ fi
 ## ------------------------------------------------------------------
 ## ------------------- CLEAN UP DIR ---------------------------------
 ## ------------------------------------------------------------------
+
+if test "${MODE}" == HiC ; then
+    rm --force "${OUTDIR}"/tmp/*bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv "${OUTDIR}"/"${SAMPLE_BASE}"*cool
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_pcrfree.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
+    mv "${OUTDIR}"/plots/event_distance.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
+    mv "${OUTDIR}"/plots/frags_hist.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
+fi
 
 if test "${KEEPFILES}" == 1 ; then
     fn_log "Cleaning up temporary files for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
@@ -970,15 +1089,16 @@ tree "${OUTDIR}" -P "*${HASH}*" --prune 2>&1 | tee -a "${LOGFILE}"
 
 ## -- List commands
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
-fn_log "COMMANDS EXECUTED" >> "${LOGFILE}"
-grep '\[EXEC\]' "${LOGFILE}" | sed 's,.*\[EXEC\] ,,' | sed 's,| ,\\\n\t| ,g' > "${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-commands.txt
-grep '\[EXEC\]' "${LOGFILE}" | sed 's,.*\[EXEC\] ,,' | sed 's,| ,\\\n\t| ,g' >> "${LOGFILE}"
+fn_log "COMMANDS EXECUTED" 2>&1 | tee -a "${LOGFILE}"
+grep "\[EXEC\]" "${LOGFILE}" | sed 's,.*EXEC],,' | sed 's,| ,\\\n\t| ,g' 2>&1 | tee -a "${LOGFILE}"
 
 ## -- Done !
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "Pipeline achieved: `date`" 2>&1 | tee -a "${LOGFILE}"
-echo -e "Do check the log file ("${LOGFILE}") to make sure everything went ok!"
-echo -e "You can re-run the commands by running \`./"${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-commands.txt\`."
+echo -e "Do check the log file \`${LOGFILE}\` to make sure everything went ok!"
+echo -e "You can re-run the commands by running \`./"${CMDFILE}"\`."
 
 ## -- Remove color decorators from log file
 sed -i 's/\x1b\[[0-9;]*m//g' "${LOGFILE}"
+grep "\[EXEC\]" "${LOGFILE}" | sed 's,.*EXEC],,' | sed 's,| ,\\\n\t| ,g' > "${CMDFILE}"
+# sed -i 's/.*21m//g' "${CMDFILE}"

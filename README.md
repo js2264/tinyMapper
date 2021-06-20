@@ -1,6 +1,8 @@
 # tinyMapper 
 
-The goal of `tinyMapper.sh` is to provide a minimal -but working!- workflow to process ChIP-seq (with or without input/spikein), RNA-seq, MNase-seq and ATAC-seq data. Currently, this workflow only works for **paired-end** data. 
+A minimalist yet versatile workflow to process ChIP-seq (with or without input/spikein), RNA-seq, MNase-seq and ATAC-seq data.  
+`tinyMapper` can also operate as a thin wrapper to process HiC data with `hicstuff` ([Cyril Matthey-Doret et al.](http://doi.org/10.5281/zenodo.4066363)) and `cooler`.  
+Currently, this workflow only works for **paired-end** data. 
 
 The default steps are: 
 
@@ -24,7 +26,7 @@ The default steps are:
 
 **DISCLAIMER:** 
 
-- This is by **no means** the "best" or "only" way to process sequencing data. Do not hesitate to give suggestions / feedbacks!
+- This is by **no means** the "best" or "only" way to process sequencing data. Do not hesitate to give suggestions / feedbacks to improve this workflow.
 - This workflow does **NOT** include any proper QC / validation of the data. At the very least, do run `fastqc` on the sequencing data. Further QC checks are highly recommended, and will vary depending on which assay is performed. 
 
 ### Installation
@@ -40,33 +42,41 @@ conda activate tinymapper
 ./tinyMapper.sh
 ```
 
+If HiC is going to be mapped with `hicstuff`, don't forget to install it as well! 
+
+```sh
+pip install hicstuff
+```
+
 ### Usage 
 
 Just download `tinyMapper.sh` script and use it!
 
 ```
-Usage: tinyMapper.sh -m <MODE> -s <SAMPLE> -g <GENOME> -o <OUTPUT> [ -i <INPUT> | -c <CALIBRATION> | -t <THREADS> | -M <MEMORY> | -k <1, 0> ]
+Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --outdir <OUTPUT> [ additional arguments ]
 
     ---------------
     BASIC ARGUMENTS
 
-        -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA) (Default: ChIP)"
-        -s|--sample <SAMPLE>             Path prefix to sample `<SAMPLE>_R{1,2}.fastq.gz` (e.g. for `~/reads/JS001_R{1,2}.fastq.gz` files, use `--sample ~/reads/JS001`)"
-        -g|--genome <GENOME>             Path prefix to reference genome (e.g. for `~/genome/W303/W303.fa` fasta file, use `--genome ~/genome/W303/W303`)"
-        -o|--output <OUTPUT>             Path to store results (Default: `./results/`)"
-        -i|--input <INPUT>               (Optional) Path prefix to input `<INPUT>_R{1,2}.fastq.gz`"
-        -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
-        -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)"
-        -M|--memory <MEMORY>             (Optional) Memory in bits (Default: 12294967296, which is 12Gb)"
-        -k|--keepIntermediate            (Optional) Keep intermediate mapping files"
-        -h|--help                        Print this message"
+        -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)
+        -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)
+        -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)
+        -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)
+        -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`
+        -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration
+        -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)
+        -k|--keepIntermediate            (Optional) Keep intermediate mapping files
+        -h|--help                        Print this message
 
     ------------------
     ADVANCED ARGUMENTS
 
-        -f|--filter <FILTER>      Filtering options for `samtools view` (between single quotes)"
-                                  Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)"
-        -d|--duplicates           Keep duplicate reads"
+        -f|--filter <FILTER>             Filtering options for `samtools view` (between single quotes)
+                                         Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)
+        -d|--duplicates                  Keep duplicate reads
+        -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: '--iterative --duplicates --filter --plot')
+        -r|--resolutions <#>             Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')
+        -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima '--restriction DpnII,HinfI')
 ```
 
 Note that fastq files *MUST* be named following this convention:
@@ -115,6 +125,12 @@ Note that fastq files *MUST* be named following this convention:
 
     ```
     ./tinyMapper.sh --mode MNase -s ~/testMNase -g ~/genomes/W303/W303 -o ~/results
+    ```
+
+* **HiC mode**:
+
+    ```
+    ./tinyMapper.sh --mode HiC -s ~/testHiC -g ~/genomes/W303/W303 -o ~/results --resolutions 1000,2000,8000 --restriction 'DpnII,HinfI'
     ```
 
 ### Acknowledgments

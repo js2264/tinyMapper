@@ -9,3 +9,4 @@ dependencies:
   - macs2
   - mawk
   - samtools
+  - cooler
