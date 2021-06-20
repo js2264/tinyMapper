@@ -297,6 +297,7 @@ INPUT_R2="${INPUT}_R2.fastq.gz"
 STATFILE="${OUTDIR}/stats/sample-${SAMPLE_BASE}_input-${INPUT_BASE}_genome-${GENOME}_calibration-${SPIKEIN}_${HASH}".counts.tsv
 LOGFILE="${OUTDIR}/`date "+%y%m%d"`-${HASH}-log.txt"
 CMDFILE="${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-commands.txt
+TMPFILE="${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-INPROGRESS
 
 # - Advanced options
 SAMTOOLS_OPTIONS=" -@ ${CPU} --output-fmt bam "
@@ -360,6 +361,7 @@ fi
 
 mkdir -p "${OUTDIR}"
 touch "${LOGFILE}"
+touch "${TMPFILE}"
 
 ## ------------------------------------------------------------------
 ## -------- CHECKING THAT REQUIRED FILES EXIST ----------------------
@@ -1102,3 +1104,9 @@ echo -e "You can re-run the commands by running \`./"${CMDFILE}"\`."
 sed -i 's/\x1b\[[0-9;]*m//g' "${LOGFILE}"
 grep "\[EXEC\]" "${LOGFILE}" | sed 's,.*EXEC],,' | sed 's,| ,\\\n\t| ,g' > "${CMDFILE}"
 # sed -i 's/.*21m//g' "${CMDFILE}"
+
+## -- Remove progress file and delete empty dirs
+rm --force "${TMPFILE}"
+if test `ls "${OUTDIR}"/*INPROGRESS 1> /dev/null 2>&1 ; echo $?` == 2 ; then
+    find "${OUTDIR}" -type d -empty -delete
+fi
