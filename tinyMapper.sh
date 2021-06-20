@@ -12,7 +12,7 @@ function usage() {
     echo -e "# J. Serizay, C. Matthey-Doret, H. Bordelet"
     echo -e "# GPL-3.0"
     echo -e ""
-    echo -e "Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --outdir <OUTPUT> [ additional arguments ]"
+    echo -e "Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> [ additional arguments ]"
     echo -e ""
     echo -e "-------------------------------"
     echo -e ""
