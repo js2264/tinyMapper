@@ -774,7 +774,7 @@ fi
 if test "${MODE}" == MNase ; then 
     fn_log "Further filtering sample bam file of reads mapped to reference genome for fragment size (70-250 bp)" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
-        | mawk '/^@/ || (sqrt(($9^2)) > 70 && sqrt(($9^2)) < 250)' \
+        | mawk '/^@/ || (sqrt((\$9^2)) > 70 && sqrt((\$9^2)) < 250)' \
         | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
     fn_exec "${cmd}" "${LOGFILE}"
     cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
