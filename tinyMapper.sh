@@ -295,9 +295,10 @@ INPUT_R2="${INPUT}_R2.fastq.gz"
 
 # - Specific files
 STATFILE="${OUTDIR}/stats/sample-${SAMPLE_BASE}_input-${INPUT_BASE}_genome-${GENOME}_calibration-${SPIKEIN}_${HASH}".counts.tsv
-LOGFILE="${OUTDIR}/`date "+%y%m%d"`-${HASH}-log.txt"
-CMDFILE="${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-commands.txt
-TMPFILE="${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-INPROGRESS
+LOGFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${HASH}-log.txt"
+CMDFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${HASH}-commands.txt"
+SCRIPTFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${HASH}-script.txt"
+TMPFILE="${OUTDIR}/`date "+%y%m%d"`-${HASH}-INPROGRESS"
 
 # - Advanced options
 SAMTOOLS_OPTIONS=" -@ ${CPU} --output-fmt bam "
@@ -518,6 +519,7 @@ mkdir -p "${OUTDIR}"/matrices/"${SAMPLE_BASE}"/
 mkdir -p "${OUTDIR}"/pairs/
 mkdir -p "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/
 mkdir -p "${OUTDIR}"/stats/
+mkdir -p "${OUTDIR}"/logs/
 
 ## ------------------------------------------------------------------
 ## -------- PRINT STARTUP INFO --------------------------------------
@@ -973,7 +975,7 @@ fi
 ## ------------------- CALLING PEAKS --------------------------------
 ## ------------------------------------------------------------------
 
-if test "${DO_PEAKS}" == 0 && test "${DO_INPUT}" == 1 ; then
+if test "${DO_PEAKS}" == 0 ; then
 
     fn_log "Calling peaks for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
 
@@ -1004,7 +1006,7 @@ if test "${DO_PEAKS}" == 0 && test "${DO_INPUT}" == 1 ; then
 
 fi
 
-fi # ------------------------------------- Exit HiC if statement
+fi # ------------------------------------- Exit HiC if...else statement
 
 ## ------------------------------------------------------------------
 ## ------------------- CHECK NB OF READS ----------------------------
@@ -1081,8 +1083,8 @@ fi
 
 ## -- Back up script file
 fn_log "Backing up pipeline script" 2>&1 | tee -a "${LOGFILE}"
-cp "${BASH_SOURCE}" "${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-script.txt
-chmod -x "${OUTDIR}"/`date "+%y%m%d"`-"${HASH}"-script.txt
+cp "${BASH_SOURCE}" "${SCRIPTFILE}"
+chmod -x "${SCRIPTFILE}"
 
 ## -- List generated files
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
