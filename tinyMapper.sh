@@ -598,6 +598,7 @@ if test "${MODE}" == HiC ; then
         --nproc "${CPU}" \
         --resolutions "${HICREZ}" \
         --balance \
+        --balance-args \"--cis-only\" \
         --out "${SAMPLE_MCOOL}" \
         "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
