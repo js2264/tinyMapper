@@ -356,7 +356,7 @@ fi
 if test "${MODE}" == HiC ; then 
     SAMPLE_ALIGNED_GENOME_FWD="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.bam
     SAMPLE_ALIGNED_GENOME_REV="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.bam
-    SAMPLE_MATRIX=matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}"
+    SAMPLE_COOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".cool
     SAMPLE_MCOOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".mcool
 fi
 
@@ -1046,8 +1046,9 @@ fi
 
 if test "${MODE}" == HiC ; then
     rm --force "${OUTDIR}"/tmp/*bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
-    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv "${OUTDIR}"/"${SAMPLE_BASE}"*cool
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv 
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"*cool "${SAMPLE_COOL}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs
