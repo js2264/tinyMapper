@@ -38,6 +38,7 @@ function usage() {
     echo -e "      -hic|--hicstuff <OPT>     Additional arguments passed to hicstuff (default: \`--iterative --duplicates --filter --plot\`)"
     echo -e "      -r|--resolutions <#>      Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')"
     echo -e "      -re|--restriction <RE>    Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)"
+    echo -e "      -M|--MNaseSizes <MIN,MAX> Minimum and maximum fragment size for MNase track (default: \`--MNaseSizes 70,250\`)"
     echo -e ""
     echo -e "-------------------------------"
     echo -e ""
@@ -156,6 +157,7 @@ OUTDIR='results'
 FILTEROPTIONS='-f 2 -q 10'
 HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
 HICREZ='10000,20000,40000,160000,1280000'
+MNASESIZES='70,250'
 RE=' DpnII,HinfI '
 KEEPDUPLICATES=1
 KEEPFILES=1
@@ -243,6 +245,11 @@ do
         shift 
         shift 
         ;;
+        -M|--MNaseSizes)
+        MNASESIZES=${2}
+        shift 
+        shift 
+        ;;
         -d|--duplicates)
         KEEPDUPLICATES=0
         shift 
@@ -303,6 +310,8 @@ DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
 REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " -r " ; else echo " " ; fi`
 FIRSTREZ=`echo "${HICREZ}" | sed 's/,.*//' | sed 's,000$,kb,'`
+MNASE_MINSIZE=`echo "${MNASESIZES}" | sed 's/,.*//'`
+MNASE_MAXSIZE=`echo "${MNASESIZES}" | sed 's/.*,//'`
 
 # - Bam file names
 SAMPLE_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".sam
@@ -337,9 +346,9 @@ if test "${DO_CALIBRATION}" == 0 ; then
 fi
 
 if test "${MODE}" == MNase ; then 
-    SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".bam
-    SAMPLE_READSIZE_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".70-250.CPM.bw
-    SAMPLE_NUCPOS_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^70-250^"${HASH}".nucpos.CPM.bw
+    SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".bam
+    SAMPLE_READSIZE_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}"."${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}".CPM.bw
+    SAMPLE_NUCPOS_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".nucpos.CPM.bw
 fi
 
 if test "${MODE}" == RNA ; then 
@@ -594,7 +603,7 @@ if test "${MODE}" == HiC ; then
         --nproc "${CPU}" \
         --resolutions "${HICREZ}" \
         --balance \
-        --balance-args \"--cis-only\" \
+        --balance-args \"--cis-only --min-nnz 3 --mad-max 7\" \
         --out "${SAMPLE_MCOOL}" \
         "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -771,9 +780,9 @@ if test "${DO_CALIBRATION}" == 0 ; then
 fi
 
 if test "${MODE}" == MNase ; then 
-    fn_log "Further filtering sample bam file of reads mapped to reference genome for fragment size (70-250 bp)" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "Further filtering sample bam file of reads mapped to reference genome for fragment size ("${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}" bp)" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
-        | mawk '/^@/ || (sqrt((\$9^2)) > 70 && sqrt((\$9^2)) < 250)' \
+        | mawk '/^@/ || (sqrt((\$9^2)) > "${MNASE_MINSIZE}" && sqrt((\$9^2)) < "${MNASE_MAXSIZE}")' \
         | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
     fn_exec "${cmd}" "${LOGFILE}"
     cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
@@ -911,7 +920,7 @@ fi
 
 if test "${MODE}" == MNase ; then 
 
-    fn_log "Generating CPM track for ${SAMPLE_BASE} filtered for reads >70bp & <250bp" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "Generating CPM track for ${SAMPLE_BASE} filtered for reads >${MNASE_MINSIZE}bp & <${MNASE_MAXSIZE}bp" 2>&1 | tee -a "${LOGFILE}"
     cmd="bamCoverage \
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}" \
         --outFileName "${SAMPLE_READSIZE_TRACK}" \
@@ -933,6 +942,7 @@ if test "${MODE}" == MNase ; then
         --skipNonCoveredRegions \
         --extendReads \
         --ignoreDuplicates \
+        --smoothLength 10 \
         --MNase"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
@@ -1044,7 +1054,7 @@ if test "${MODE}" == HiC ; then
     rm --force "${OUTDIR}"/tmp/*bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv 
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"*cool "${SAMPLE_COOL}"
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs
