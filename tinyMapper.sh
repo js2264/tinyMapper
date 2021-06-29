@@ -81,52 +81,48 @@ function is_set() {
 function fn_log {
     date=`date "+%y-%m-%d %H:%M:%S"`
     BOLD="\e[1m"
-    BOLDEND="\e[21m"
     GREEN="\e[32m"
     RED="\e[31m"
     BLUE="\e[96m"
     YELLOW="\e[33m"
-    DEFAULT="\e[97m"
-    echo -e "${BOLD}${BLUE}${date} | ${GREEN}[INFO]${DEFAULT}${BOLDEND} $@"
+    RESET="\e[0m"
+    echo -e "${BOLD}${BLUE}${date} | ${GREEN}[INFO]${RESET} $@"
 }
 
 function fn_error {
     date=`date "+%y-%m-%d %H:%M:%S"`
     BOLD="\e[1m"
-    BOLDEND="\e[21m"
     GREEN="\e[32m"
     RED="\e[31m"
     BLUE="\e[96m"
     YELLOW="\e[33m"
-    DEFAULT="\e[97m"
-    echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${DEFAULT}${BOLDEND} $@"
+    RESET="\e[0m"
+    echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${RESET} $@"
 }
 
 function fn_warning {
     date=`date "+%y-%m-%d %H:%M:%S"`
     BOLD="\e[1m"
-    BOLDEND="\e[21m"
     GREEN="\e[32m"
     RED="\e[31m"
-    ORANGE="\e[38;5;208m"
+    MAGENTA="\e[35m"
     BLUE="\e[96m"
     YELLOW="\e[33m"
-    DEFAULT="\e[97m"
-    echo -e "${BOLD}${BLUE}${date} | ${ORANGE}[WAR.]${DEFAULT}${BOLDEND} $@"
+    RESET="\e[0m"
+    echo -e "${BOLD}${BLUE}${date} | ${MAGENTA}[WAR.]${RESET} $@"
 }
 
 function fn_exec {
     date=`date "+%y-%m-%d %H:%M:%S"`
     BOLD="\e[1m"
-    BOLDEND="\e[21m"
     GREEN="\e[32m"
     RED="\e[31m"
     BLUE="\e[96m"
     YELLOW="\e[33m"
-    DEFAULT="\e[97m"
+    RESET="\e[0m"
     cmd=`echo $1 | tr -s '' | sed 's,2>>.*,,' `
     if test `is_set $2` == 0 ; then 
-        echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${DEFAULT}${BOLDEND} ${cmd}" >> $2
+        echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${RESET} ${cmd}" >> $2
     fi
     eval ${cmd}
 }
