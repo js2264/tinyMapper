@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VERSION=0.9.0
+
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
 
@@ -8,6 +10,8 @@ HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
 ## ------------------------------------------------------------------
 
 function usage() {
+    echo -e ""
+    echo -e "tinyMapper v${VERSION}"
     echo -e ""
     echo -e "# J. Serizay, C. Matthey-Doret, H. Bordelet"
     echo -e "# GPL-3.0"
@@ -72,6 +76,8 @@ function usage() {
     echo -e "   macs2 (for ChIP/ATAC)"
     echo -e "   hicstuff (for HiC)"
     echo -e "   cooler (for HiC)"
+    echo -e ""
+    echo -e "tinyMapper v${VERSION}"
     echo -e ""
 }
 
@@ -268,6 +274,9 @@ do
         ;;
         -h|--help)
         usage && exit 0
+        ;;
+        -v|--version)
+        echo -e "tinyMapper v${VERSION}" && exit 0
         ;;
     esac
 done
