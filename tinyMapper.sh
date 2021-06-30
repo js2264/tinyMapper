@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.1
+VERSION=0.9.2
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -34,6 +34,8 @@ function usage() {
     echo -e ""
     echo -e "   ADVANCED ARGUMENTS"
     echo -e ""
+    echo -e "      -a|--alignment <ALIGN.>   Alignment options for \`bowtie2\` (between single quotes)"
+    echo -e "                                Default: '' (no specific options)"
     echo -e "      -f|--filter <FILTER>      Filtering options for \`samtools view\` (between single quotes)"
     echo -e "                                Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)"
     echo -e "      -d|--duplicates           Keep duplicate reads"
@@ -160,6 +162,7 @@ INPUT=''
 GENOME=''
 SPIKEIN=''
 OUTDIR='results'
+BOWTIEOPTIONS=''
 FILTEROPTIONS='-f 2 -q 10'
 HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
 HICREZ='10000,20000,40000,160000,1280000'
@@ -231,6 +234,11 @@ do
         #####
         ##### ADVANCED ARGUMENTS
         #####
+        -a|--alignment)
+        BOWTIEOPTIONS=${2}
+        shift 
+        shift 
+        ;;
         -f|--filter)
         FILTEROPTIONS=${2}
         shift 
@@ -540,35 +548,36 @@ mkdir -p "${OUTDIR}"/logs/
 ## ------------------------------------------------------------------
 
 fn_log "Pipeline started on `date`" 2>&1 | tee "${LOGFILE}"
-fn_log "Command   : ${INVOC}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "Hash      : ${HASH}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "Log file  : ${LOGFILE}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "Version   : ${VERSION}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Command     : ${INVOC}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Hash        : ${HASH}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Log file    : ${LOGFILE}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Version     : ${VERSION}" 2>&1 | tee -a "${LOGFILE}"
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
-fn_log "MODE      : ${MODE}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "SAMPLE    : ${SAMPLE}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "GENOME    : ${GENOME}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "MODE        : ${MODE}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "SAMPLE      : ${SAMPLE}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "GENOME      : ${GENOME}" 2>&1 | tee -a "${LOGFILE}"
 if test "${DO_INPUT}" == 0 && test "${MODE}" == ChIP ; then
-    fn_log "INPUT     : ${INPUT}" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "INPUT       : ${INPUT}" 2>&1 | tee -a "${LOGFILE}"
 else 
     fn_warning "Input reads not provided. Processing without input." 2>&1 | tee -a "${LOGFILE}"
 fi
 if test "${DO_CALIBRATION}" == 0 && test "${MODE}" == ChIP ; then
-    fn_log "SPIKEIN   : ${SPIKEIN}" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "SPIKEIN     : ${SPIKEIN}" 2>&1 | tee -a "${LOGFILE}"
 else
     fn_warning "Spikein genome not provided. Processing without calibration." 2>&1 | tee -a "${LOGFILE}"
 fi
-fn_log "Keep dups.: `if test ${KEEPDUPLICATES} == 0 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
-fn_log "Filt. opt.: ${FILTEROPTIONS}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "CPU       : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
-fn_log "OUTDIR    : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Keep dups.  : `if test ${KEEPDUPLICATES} == 0 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Align. opt. : ${BOWTIEOPTIONS}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "Filt. opt.  : ${FILTEROPTIONS}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "CPU         : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
+fn_log "OUTDIR      : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
-fn_log "bowtie2   : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "samtools  : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "deeptools : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "macs2     : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "hicstuff  : `type -P hicstuff` (version: `hicstuff --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "cooler    : `type -P cooler` (version: `cooler --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "bowtie2     : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "samtools    : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "deeptools   : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "macs2       : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "hicstuff    : `type -P hicstuff` (version: `hicstuff --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "cooler      : `type -P cooler` (version: `cooler --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 
 ## ------------------------------------------------------------------
@@ -625,7 +634,7 @@ if test "${MODE}" == HiC ; then
 else 
 
 fn_log "Mapping sample reads to reference genome" 2>&1 | tee -a "${LOGFILE}"
-cmd="bowtie2 \
+cmd="bowtie2 ${BOWTIEOPTIONS} \
     --threads "${CPU}" \
     -x "${GENOME_BASE}" \
     -1 "${SAMPLE_R1}" \
@@ -636,7 +645,7 @@ fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 if test "${DO_CALIBRATION}" == 0 ; then
     fn_log "Mapping sample reads to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-    cmd="bowtie2 \
+    cmd="bowtie2 ${BOWTIEOPTIONS} \
         --threads "${CPU}" \
         -x "${SPIKEIN_BASE}" \
         -1 "${SAMPLE_R1}" \
@@ -646,7 +655,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     
     fn_log "Mapping sample reads non-mapped on spikein genome to reference genome" 2>&1 | tee -a "${LOGFILE}"
-    cmd="bowtie2 \
+    cmd="bowtie2 ${BOWTIEOPTIONS} \
         --threads "${CPU}" \
         -x "${GENOME_BASE}" \
         -1 "${SAMPLE_NON_ALIGNED_CALIBRATION}".1.gz \
@@ -655,7 +664,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Mapping sample reads non-mapped on reference genome to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-    cmd="bowtie2 \
+    cmd="bowtie2 ${BOWTIEOPTIONS} \
         --threads "${CPU}" \
         -x "${SPIKEIN_BASE}" \
         -1 "${SAMPLE_NON_ALIGNED_GENOME}".1.gz \
@@ -666,7 +675,7 @@ fi
 
 if test "${DO_INPUT}" == 0 ; then
     fn_log "Mapping input reads to reference genome" 2>&1 | tee -a "${LOGFILE}"
-    cmd="bowtie2 \
+    cmd="bowtie2 ${BOWTIEOPTIONS} \
         --threads "${CPU}" \
         -x "${GENOME_BASE}" \
         -1 "${INPUT_R1}" \
@@ -677,7 +686,7 @@ if test "${DO_INPUT}" == 0 ; then
 
     if test "${DO_CALIBRATION}" == 0 ; then
         fn_log "Mapping input reads to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-        cmd="bowtie2 \
+        cmd="bowtie2 ${BOWTIEOPTIONS} \
             --threads "${CPU}" \
             -x "${SPIKEIN_BASE}" \
             -1 "${INPUT_R1}" \
@@ -687,7 +696,7 @@ if test "${DO_INPUT}" == 0 ; then
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fn_log "Mapping input reads non-mapped on spikein genome to reference genome" 2>&1 | tee -a "${LOGFILE}"
-        cmd="bowtie2 \
+        cmd="bowtie2 ${BOWTIEOPTIONS} \
             --threads "${CPU}" \
             -x "${GENOME_BASE}" \
             -1 "${INPUT_NON_ALIGNED_CALIBRATION}".1.gz \
@@ -696,7 +705,7 @@ if test "${DO_INPUT}" == 0 ; then
             fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fn_log "Mapping input reads non-mapped on reference genome to spikein genome" 2>&1 | tee -a "${LOGFILE}"
-        cmd="bowtie2 \
+        cmd="bowtie2 ${BOWTIEOPTIONS} \
             --threads "${CPU}" \
             -x "${SPIKEIN_BASE}" \
             -1 "${INPUT_NON_ALIGNED_GENOME}".1.gz \
