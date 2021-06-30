@@ -91,7 +91,11 @@ Note that fastq files *MUST* be named following this convention:
     - Without input:               
 
         ```
-        ./tinyMapper.sh --mode ChIP -s ~/testIP -g ~/genomes/R64-1-1/R64-1-1 -o ~/results
+        ./tinyMapper.sh \
+            --mode ChIP \
+            -s ~/testIP \
+            -g ~/genomes/R64-1-1/R64-1-1 \
+            -o ~/results
         ```
     
     - With input:
@@ -101,7 +105,7 @@ Note that fastq files *MUST* be named following this convention:
             --sample ~/testIP \
             --input ~/testInput \
             --genome ~/genomes/R64-1-1/R64-1-1 \
-            --output ~/results`
+            --output ~/results
         ```
     
     - With input and calibration:

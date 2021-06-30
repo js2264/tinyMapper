@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.2
+VERSION=0.9.3
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -382,7 +382,7 @@ if test "${MODE}" == HiC ; then
     SAMPLE_MCOOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".mcool
 fi
 
-mkdir -p "${OUTDIR}"
+mkdir -p "${OUTDIR}"/logs
 touch "${LOGFILE}"
 touch "${TMPFILE}"
 
@@ -394,7 +394,6 @@ touch "${TMPFILE}"
 if test "${DO_INPUT}" == 1 && test "${DO_CALIBRATION}" == 0 ; then
     fn_error "Calibration can only be done if an input is provided." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-    usage
     rm --force "${LOGFILE}"
     exit 1
 fi
@@ -403,17 +402,49 @@ fi
 if test `is_set "${SAMPLE_BASE}"` == 1 ; then
     fn_error "Please provide a sample." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-    usage
     rm --force "${LOGFILE}"
     exit 1
+fi
+
+# If sample files are accessed through ssh, download them first
+if [[ "${SAMPLE_DIR}" == *:* ]] ; then 
+    echo -e "Fetching sample files from remote."
+    scp "${SAMPLE}"* .
+    SAMPLE="./${SAMPLE_BASE}"
+    NEWSAMPLE=`echo "${SAMPLE_BASE}" | sed 's,_S[0-9]*,,' | sed 's,^,./,'`
+    zcat "${SAMPLE}"*R1*gz > "${NEWSAMPLE}_R1.fastq.gz"
+    # rm --force "${SAMPLE}"*R1*gz
+    zcat "${SAMPLE}"*R2*gz > "${NEWSAMPLE}_R2.fastq.gz"
+    # rm --force "${SAMPLE}"*R2*gz
+    SAMPLE="${NEWSAMPLE}"
+    SAMPLE_DIR=`dirname "${SAMPLE}"`
+    SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
+    SAMPLE_R2="${SAMPLE}_R2.fastq.gz"
+    echo -e "Sample ID changed to: ${SAMPLE}"
+fi
+
+# If input files are accessed through ssh, download them first
+if [[ "${INPUT_DIR}" == *:* ]] ; then 
+    echo -e "Fetching input files from remote."
+    scp "${INPUT}"* .
+    INPUT="./${INPUT_BASE}"
+    NEWINPUT=`echo "${INPUT_BASE}" | sed 's,_S[0-9]*,,' | sed 's,^,./,'`
+    zcat "${INPUT}"*R1*gz > "${NEWINPUT}_R1.fastq.gz"
+    # rm --force "${INPUT}"*R1*gz
+    zcat "${INPUT}"*R2*gz > "${NEWINPUT}_R2.fastq.gz"
+    # rm --force "${INPUT}"*R2*gz
+    INPUT="${NEWINPUT}"
+    INPUT_DIR=`dirname "${INPUT}"`
+    INPUT_R1="${INPUT}_R1.fastq.gz"
+    INPUT_R2="${INPUT}_R2.fastq.gz"
+    echo -e "Input ID changed to: ${INPUT}"
 fi
 
 # Check that sample files exist
 if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
     fn_error "Sample files are missing. Check sample directory: ${SAMPLE_DIR}." 2>&1 | tee -a "${LOGFILE}"
-    fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fastq.gz & ${SAMPLE_BASE}_R1.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
+    fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fastq.gz & ${SAMPLE_BASE}_R2.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-    usage
     rm --force "${LOGFILE}"
     exit 1
 fi
@@ -422,7 +453,6 @@ fi
 if test `is_set "${GENOME}"` == 1 ; then
     fn_error "Please provide a genome." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-    usage
     rm --force "${LOGFILE}"
     exit 1
 fi
@@ -431,7 +461,6 @@ fi
 if test ! -f "${GENOME_FA}" ; then
     fn_error ""${GENOME_FA}" does not exist." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-    usage
     rm --force "${LOGFILE}"
     exit 1
 fi
@@ -440,9 +469,8 @@ fi
 if test "${DO_INPUT}" == 0 ; then
     if test ! -f "${INPUT_R1}" || test ! -f "${INPUT_R2}" ; then
         fn_error "Input files are missing. Check them in ${INPUT_DIR}." 2>&1 | tee -a "${LOGFILE}"
-        fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fastq.gz & ${INPUT_BASE}_R1.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fastq.gz & ${INPUT_BASE}_R2.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
         fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-        usage
         rm --force "${LOGFILE}"
         exit 1
     fi
@@ -453,7 +481,6 @@ if test "${DO_CALIBRATION}" == 0 ; then
     if test ! -f "${SPIKEIN_FA}" ; then
         fn_error ""${SPIKEIN_FA}" does not exist." 2>&1 | tee -a "${LOGFILE}"
         fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-        usage
         rm --force "${LOGFILE}"
         exit 1
     fi
