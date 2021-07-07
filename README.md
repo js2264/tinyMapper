@@ -52,8 +52,12 @@ pip install hicstuff
 
 Just download `tinyMapper.sh` script and use it!
 
+```sh
+./tinyMapper.sh -h
 ```
-Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> [ additional arguments ]
+
+```
+Usage: ./tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> [ additional arguments ]
 
 ---------------------- BASIC ARGUMENTS -----------------------------------------
 
@@ -67,6 +71,7 @@ Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output 
 
    -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`
    -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration
+   -bl|--blacklist <BED>            Bed file of blacklist regions
    -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)
                                     Default: '' (no specific options)
    -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)

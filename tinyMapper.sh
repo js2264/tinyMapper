@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.4
+VERSION=0.9.7
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -30,6 +30,7 @@ function usage() {
     echo -e ""
     echo -e "   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`"
     echo -e "   -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
+    echo -e "   -bl|--blacklist <BED>            Bed file of blacklist regions"
     echo -e "   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)"
     echo -e "                                    Default: '' (no specific options)"
     echo -e "   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)"
@@ -177,6 +178,7 @@ HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
 HICREZ='10000,20000,40000,160000,1280000'
 MNASESIZES='70,250'
 RE=' DpnII,HinfI '
+BLACKLISTBEDFILE=''
 KEEPDUPLICATES=1
 KEEPFILES=1
 CPU=8
@@ -250,6 +252,11 @@ do
         ;;
         -f|--filter)
         FILTEROPTIONS=${2}
+        shift 
+        shift 
+        ;;
+        -bl|--blacklist)
+        BLACKLISTBEDFILE=${2}
         shift 
         shift 
         ;;
@@ -338,6 +345,7 @@ DO_INPUT=`is_set "${INPUT}"`
 DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
 REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " -r " ; else echo " " ; fi`
+BLACKLIST_OPTIONS=`if test $(is_set "${BLACKLISTBEDFILE}") == 0 ; then echo " --blackListFileName ${BLACKLISTBEDFILE} " ; else echo " " ; fi`
 FIRSTREZ=`echo "${HICREZ}" | sed 's/,.*//' | sed 's,000$,kb,'`
 MNASE_MINSIZE=`echo "${MNASESIZES}" | sed 's/,.*//'`
 MNASE_MAXSIZE=`echo "${MNASESIZES}" | sed 's/.*,//'`
@@ -516,6 +524,14 @@ if test "${DO_CALIBRATION}" == 0 ; then
         rm --force "${LOGFILE}"
         exit 1
     fi
+fi
+
+# Check that blacklist file exists, if provided
+if test `is_set "${BLACKLISTBEDFILE}"` == 0 && test ! -f "${BLACKLISTBEDFILE}" ; then
+    fn_error "The provided blaklist file does not exist." 2>&1 | tee -a "${LOGFILE}"
+    fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+    rm --force "${LOGFILE}"
+    exit 1
 fi
 
 # Check that utils are available
@@ -881,6 +897,7 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
         --outFileName "${SAMPLE_RAW_TRACK}" \
         --binSize 1 \
         --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
@@ -895,6 +912,7 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
             --outFileName "${INPUT_RAW_TRACK}" \
             --binSize 1 \
             --numberOfProcessors "${CPU}" \
+            "${BLACKLIST_OPTIONS}" \
             --normalizeUsing CPM \
             --skipNonCoveredRegions \
             --extendReads \
@@ -911,6 +929,7 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
             --skipZeroOverZero \
             --skipNAs \
             --numberOfProcessors "${CPU}" \
+            "${BLACKLIST_OPTIONS}" \
             --binSize 5 \
             --skipNonCoveredRegions \
             --ignoreDuplicates"
@@ -928,6 +947,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --outFileName "${SAMPLE_RAW_TRACK}" \
         --binSize 1 \
         --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
@@ -940,6 +960,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --outFileName "${INPUT_RAW_TRACK}" \
         --binSize 1 \
         --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
@@ -956,6 +977,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --skipZeroOverZero \
         --skipNAs \
         --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
         --binSize 5 \
         --skipNonCoveredRegions \
         --ignoreDuplicates"
@@ -967,6 +989,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --outFileName "${SAMPLE_SPIKEINSCALED_TRACK}" \
         --binSize 1 \
         --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
         --normalizeUsing 'None' \
         --scaleFactor "${SCALING_FACTOR}" \
         --skipNonCoveredRegions \
@@ -984,6 +1007,7 @@ if test "${MODE}" == MNase ; then
         --outFileName "${SAMPLE_READSIZE_TRACK}" \
         --binSize 1 \
         --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
@@ -996,6 +1020,7 @@ if test "${MODE}" == MNase ; then
         --outFileName "${SAMPLE_NUCPOS_TRACK}" \
         --binSize 1 \
         --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
@@ -1014,6 +1039,7 @@ if test "${MODE}" == RNA ; then
         --outFileName "${SAMPLE_TRACK_FWD}" \
         --binSize 1 \
         --numberOfProcessors 12 \
+        "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
@@ -1027,6 +1053,7 @@ if test "${MODE}" == RNA ; then
         --outFileName "${SAMPLE_TRACK_REV}" \
         --binSize 1 \
         --numberOfProcessors 12 \
+        "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
