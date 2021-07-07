@@ -53,30 +53,36 @@ pip install hicstuff
 Just download `tinyMapper.sh` script and use it!
 
 ```
-Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --outdir <OUTPUT> [ additional arguments ]
+Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> [ additional arguments ]
 
-    ---------------
-    BASIC ARGUMENTS
+---------------------- BASIC ARGUMENTS -----------------------------------------
 
-        -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)
-        -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)
-        -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)
-        -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)
-        -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`
-        -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration
-        -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)
-        -k|--keepIntermediate            (Optional) Keep intermediate mapping files
-        -h|--help                        Print this message
+   -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)
+   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)
+   -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)
+   -h|--help                        Print help ('--help' for examples)
 
-    ------------------
-    ADVANCED ARGUMENTS
 
-        -f|--filter <FILTER>             Filtering options for `samtools view` (between single quotes)
-                                         Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)
-        -d|--duplicates                  Keep duplicate reads
-        -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: '--iterative --duplicates --filter --plot')
-        -r|--resolutions <#>             Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')
-        -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima '--restriction DpnII,HinfI')
+---------------------- ADVANCED ARGUMENTS --------------------------------------
+
+   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`
+   -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration
+   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)
+                                    Default: '' (no specific options)
+   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)
+                                    Default: '-f 2 -q 10' ('-f 2' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)
+   -d|--duplicates                  Keep duplicate reads
+   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--iterative --duplicates --filter --plot\`)
+   -r|--resolutions <#>             Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')
+   -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)
+   -M|--MNaseSizes <MIN,MAX>        Minimum and maximum fragment size for MNase track (default: \`--MNaseSizes 70,250\`)
+
+
+---------------------- OUTPUT ARGUMENTS ----------------------------------------
+
+   -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)
+   -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)
+   -k|--keepIntermediate            (Optional) Keep intermediate mapping files
 ```
 
 Note that fastq files *MUST* be named following this convention:

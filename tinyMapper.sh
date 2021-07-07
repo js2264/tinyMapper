@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.3
+VERSION=0.9.4
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -16,37 +16,46 @@ function usage() {
     echo -e ""
     echo -e "Usage: tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> [ additional arguments ]"
     echo -e ""
-    echo -e "-------------------------------"
+    echo -e "================================================================================"
     echo -e ""
-    echo -e "   BASIC ARGUMENTS"
+    echo -e "---------------------- BASIC ARGUMENTS -----------------------------------------"
     echo -e ""
-    echo -e "      -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)"
-    echo -e "      -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)"
-    echo -e "      -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)"
-    echo -e "      -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)"
-    echo -e "      -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`"
-    echo -e "      -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
-    echo -e "      -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)"
-    echo -e "      -k|--keepIntermediate            (Optional) Keep intermediate mapping files"
-    echo -e "      -h|--help                        Print this message"
+    echo -e "   -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)"
+    echo -e "   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)"
+    echo -e "   -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)"
+    echo -e "   -h|--help                        Print help ('--help' for examples)"
     echo -e ""
-    echo -e "   -----"
     echo -e ""
-    echo -e "   ADVANCED ARGUMENTS"
+    echo -e "---------------------- ADVANCED ARGUMENTS --------------------------------------"
     echo -e ""
-    echo -e "      -a|--alignment <ALIGN.>   Alignment options for \`bowtie2\` (between single quotes)"
-    echo -e "                                Default: '' (no specific options)"
-    echo -e "      -f|--filter <FILTER>      Filtering options for \`samtools view\` (between single quotes)"
-    echo -e "                                Default: '-f 2 -q 10' (only keep paired reads and filter out reads with mapping quality score < 10)"
-    echo -e "      -d|--duplicates           Keep duplicate reads"
-    echo -e "      -hic|--hicstuff <OPT>     Additional arguments passed to hicstuff (default: \`--iterative --duplicates --filter --plot\`)"
-    echo -e "      -r|--resolutions <#>      Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')"
-    echo -e "      -re|--restriction <RE>    Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)"
-    echo -e "      -M|--MNaseSizes <MIN,MAX> Minimum and maximum fragment size for MNase track (default: \`--MNaseSizes 70,250\`)"
+    echo -e "   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`"
+    echo -e "   -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
+    echo -e "   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)"
+    echo -e "                                    Default: '' (no specific options)"
+    echo -e "   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)"
+    echo -e "                                    Default: '-f 2 -q 10' ('-f 2' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)"
+    echo -e "   -d|--duplicates                  Keep duplicate reads"
     echo -e ""
-    echo -e "-------------------------------"
+    echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--iterative --duplicates --filter --plot\`)"
+    echo -e "   -r|--resolutions <#>             Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')"
+    echo -e "   -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)"
     echo -e ""
-    echo -e "Examples:"
+    echo -e "   -M|--MNaseSizes <MIN,MAX>        Minimum and maximum fragment size for MNase track (default: \`--MNaseSizes 70,250\`)"
+    echo -e ""
+    echo -e ""
+    echo -e "---------------------- OUTPUT ARGUMENTS ----------------------------------------"
+    echo -e ""
+    echo -e "   -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)"
+    echo -e "   -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)"
+    echo -e "   -k|--keepIntermediate            (Optional) Keep intermediate mapping files"
+    echo -e ""
+}
+
+function usage_extended() {
+    usage
+    echo -e "================================================================================"
+    echo -e ""
+    echo -e "---------------------- EXAMPLES ------------------------------------------------"
     echo -e ""
     echo -e "   ChIP-seq mode:"
     echo -e ""
@@ -66,9 +75,9 @@ function usage() {
     echo -e ""
     echo -e "      ./tinyMapper.sh -m HiC -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results --resolutions 1000,2000,4000 --restriction 'DpnII,HinfI'"
     echo -e ""
-    echo -e "-------------------------------"
+    echo -e "================================================================================"
     echo -e ""
-    echo -e "Required utilities:"
+    echo -e "---------------------- REQUIRED UTILITIES --------------------------------------"
     echo -e ""
     echo -e "   bowtie2"
     echo -e "   samtools"
@@ -77,7 +86,7 @@ function usage() {
     echo -e "   hicstuff (for HiC)"
     echo -e "   cooler (for HiC)"
     echo -e ""
-    echo -e "-------------------------------"
+    echo -e "================================================================================"
     echo -e ""
     echo -e "tinyMapper v${VERSION}"
     echo -e ""
@@ -156,7 +165,7 @@ function fastqfastcnt {
 
 # Default values of arguments
 
-MODE=ChIP
+MODE='ChIP'
 SAMPLE=''
 INPUT=''
 GENOME=''
@@ -280,8 +289,11 @@ do
         KEEPFILES=0
         shift 
         ;;
-        -h|--help)
+        -h)
         usage && exit 0
+        ;;
+        --help)
+        usage_extended && exit 0
         ;;
         -v|--version)
         echo -e "tinyMapper v${VERSION}" && exit 0
