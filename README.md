@@ -31,15 +31,20 @@ The default steps are:
 
 ### Installation
 
-`tinyMapper.sh` can be directly cloned from `GitHub`, and dependencies can be installed via conda. 
-You can create and activate a conda environment using the yaml file we provide as follows:
+`tinyMapper.sh` can be directly downloaded from `GitHub`. It is a single script 
+file (`.sh`) which can be executed with: `./tinyMapper.sh`. 
 
 ```sh
-git clone https://github.com/js2264/tinyMapper.git
-cd tinyMapper
-conda env create -f tinymapper.yaml
+wget https://raw.githubusercontent.com/js2264/tinyMapper/master/tinyMapper.sh
+chmod +x tinyMapper.sh
+```
+
+Dependencies can be installed via conda. You can create and activate a conda 
+environment using the yaml file we provide as follows:
+
+```sh
+conda env create -f https://raw.githubusercontent.com/js2264/tinyMapper/master/tinymapper.yaml
 conda activate tinymapper
-./tinyMapper.sh
 ```
 
 If HiC is going to be mapped with `hicstuff`, don't forget to install it as well! 
@@ -53,6 +58,8 @@ pip install hicstuff
 Just download `tinyMapper.sh` script and use it!
 
 ```sh
+wget https://raw.githubusercontent.com/js2264/tinyMapper/master/tinyMapper.sh
+chmod +x tinyMapper.sh
 ./tinyMapper.sh -h
 ```
 
