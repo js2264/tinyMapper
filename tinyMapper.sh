@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.7
+VERSION=0.9.8
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -169,8 +169,8 @@ function fastqfastcnt {
 MODE='ChIP'
 SAMPLE=''
 INPUT=''
-GENOME=''
-SPIKEIN=''
+GENOME_=''
+SPIKEIN_=''
 OUTDIR='results'
 BOWTIEOPTIONS=''
 FILTEROPTIONS='-f 2 -q 10'
@@ -185,20 +185,20 @@ CPU=8
 
 # Custom values for test
 
-# MODE=ChIP
-# SAMPLE=HB44
-# INPUT=HB42
-# GENOME=~/genomes/R64-1-1/R64-1-1
-# SPIKEIN=~/genomes/Cglabrata_CBS138/Cglabrata_CBS138
-# OUTDIR=results
-# FILTEROPTIONS='-F 4 -q 5'
-# KEEPDUPLICATES=0
-# CPU=16
-# KEEPFILES=0
+MODE=ChIP
+SAMPLE=sftpcampus:tmp/HB44
+INPUT=sftpcampus:tmp/HB42
+GENOME_=~/genomes/R64-1-1/R64-1-1
+SPIKEIN_=''
+OUTDIR=results
+FILTEROPTIONS='-F 4 -q 5'
+KEEPDUPLICATES=0
+CPU=16
+KEEPFILES=0
 
 # MODE=HiC
 # SAMPLE=test
-# GENOME=~/genomes/W303/W303
+# GENOME_=~/genomes/W303/W303
 # HICREZ='1000,2000,4000,8000'
 # KEEPFILES=0
 
@@ -228,12 +228,12 @@ do
         shift 
         ;;
         -g|--genome)
-        GENOME="${2}"
+        GENOME_="${2}"
         shift 
         shift 
         ;;
         -c|--calibration)
-        SPIKEIN="${2}"
+        SPIKEIN_="${2}"
         shift 
         shift 
         ;;
@@ -313,12 +313,12 @@ done
 ## ------------------------------------------------------------------
 
 # - Genome(s) variable
-GENOME_DIR=`dirname "${GENOME}"`
-GENOME=`basename "${GENOME}"`
+GENOME_DIR=`dirname "${GENOME_}"`
+GENOME=`basename "${GENOME_}"`
 GENOME_BASE="${GENOME_DIR}"/"${GENOME}"
 GENOME_FA="${GENOME_BASE}.fa"
-SPIKEIN_DIR=`dirname "${SPIKEIN}"`
-SPIKEIN=`basename "${SPIKEIN}"`
+SPIKEIN_DIR=`dirname "${SPIKEIN_}"`
+SPIKEIN=`basename "${SPIKEIN_}"`
 SPIKEIN_BASE="${SPIKEIN_DIR}"/"${SPIKEIN}"
 SPIKEIN_FA="${SPIKEIN_BASE}.fa"
 
@@ -407,7 +407,7 @@ touch "${LOGFILE}"
 touch "${TMPFILE}"
 
 ## ------------------------------------------------------------------
-## -------- CHECKING THAT REQUIRED FILES EXIST ----------------------
+## -------- CHECKING THAT ALL REQUIRED FILES EXIST ------------------
 ## ------------------------------------------------------------------
 
 # Abort if trying to calibrate without input
@@ -430,43 +430,70 @@ fi
 if [[ "${SAMPLE_DIR}" == *:* ]] ; then 
     echo -e "Fetching sample files from remote."
     scp "${SAMPLE}"* .
-    SAMPLE="./${SAMPLE_BASE}"
-    NEWSAMPLE=`echo "${SAMPLE_BASE}" | sed 's,_S[0-9]*,,' | sed 's,^,./,'`
-    zcat "${SAMPLE}"*R1*gz > "${NEWSAMPLE}_R1.fastq.gz"
-    # rm --force "${SAMPLE}"*R1*gz
-    zcat "${SAMPLE}"*R2*gz > "${NEWSAMPLE}_R2.fastq.gz"
-    # rm --force "${SAMPLE}"*R2*gz
-    SAMPLE="${NEWSAMPLE}"
+    SAMPLE="./`basename ${SAMPLE}`"
     SAMPLE_DIR=`dirname "${SAMPLE}"`
+    SAMPLE_BASE=`basename "${SAMPLE}"`
     SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
     SAMPLE_R2="${SAMPLE}_R2.fastq.gz"
-    echo -e "Sample ID changed to: ${SAMPLE}"
 fi
 
 # If input files are accessed through ssh, download them first
 if [[ "${INPUT_DIR}" == *:* ]] ; then 
     echo -e "Fetching input files from remote."
     scp "${INPUT}"* .
-    INPUT="./${INPUT_BASE}"
-    NEWINPUT=`echo "${INPUT_BASE}" | sed 's,_S[0-9]*,,' | sed 's,^,./,'`
-    zcat "${INPUT}"*R1*gz > "${NEWINPUT}_R1.fastq.gz"
-    # rm --force "${INPUT}"*R1*gz
-    zcat "${INPUT}"*R2*gz > "${NEWINPUT}_R2.fastq.gz"
-    # rm --force "${INPUT}"*R2*gz
-    INPUT="${NEWINPUT}"
+    INPUT="./`basename ${INPUT}`"
     INPUT_DIR=`dirname "${INPUT}"`
+    INPUT_BASE=`basename "${INPUT}"`
     INPUT_R1="${INPUT}_R1.fastq.gz"
     INPUT_R2="${INPUT}_R2.fastq.gz"
-    echo -e "Input ID changed to: ${INPUT}"
+fi
+
+# If several sample files are found, zcat all of them
+filestomerge=`ls "${SAMPLE}"*1*gz 2>/dev/null | grep -v "${SAMPLE}_R1.fastq.gz" | grep -v '.*_R2_.*' | grep -v '.*_2_.*' | grep -v '.*end2.*'`
+cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
+if [ "$cnt" -gt "1" ] ; then 
+    echo -e "Merging several sample files together (R1):  `echo -n ${filestomerge}`"
+    zcat `ls "${SAMPLE}"*1*gz 2>/dev/null | grep -v "${SAMPLE}_R1.fastq.gz"` | gzip > "${SAMPLE}_R1.fastq.gz"
+    SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
+fi
+filestomerge=`ls "${SAMPLE}"*2*gz 2>/dev/null | grep -v "${SAMPLE}_R2.fastq.gz" | grep -v '.*_R1_.*' | grep -v '.*_1_.*' | grep -v '.*end1.*'`
+cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
+if [ "$cnt" -gt "1" ] ; then 
+    echo -e "Merging several sample files together (R2):  `echo -n ${filestomerge}`"
+    zcat `ls "${SAMPLE}"*2*gz 2>/dev/null | grep -v "${SAMPLE}_R2.fastq.gz"` | gzip > "${SAMPLE}_R2.fastq.gz"
+    SAMPLE_R2="${SAMPLE}_R2.fastq.gz"
+fi
+
+# If several input files are found, zcat all of them
+filestomerge=`ls "${INPUT}"*1*gz 2>/dev/null | grep -v "${INPUT}_R1.fastq.gz" | grep -v '.*_R2_.*' | grep -v '.*_2_.*' | grep -v '.*end2.*'`
+cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
+if test "$cnt" -gt "1" && test "${DO_INPUT}" ==  0 ; then 
+    echo -e "Merging several input files together (R1):  `echo -n ${filestomerge}`"
+    zcat "${INPUT}"*R1*gz | gzip > "${INPUT}_R1.fastq.gz"
+    INPUT_R1="${INPUT}_R1.fastq.gz"
+fi
+filestomerge=`ls "${INPUT}"*2*gz 2>/dev/null | grep -v "${INPUT}_R2.fastq.gz" | grep -v '.*_R1_.*' | grep -v '.*_1_.*' | grep -v '.*end1.*'`
+cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
+if test "$cnt" -gt "1" && test "${DO_INPUT}" ==  0 ; then 
+    echo -e "Merging several input files together (R2):  `echo -n ${filestomerge}`"
+    zcat "${INPUT}"*R2*gz | gzip > "${INPUT}_R2.fastq.gz"
+    INPUT_R2="${INPUT}_R2.fastq.gz"
 fi
 
 # Check that sample files exist
 if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
-    fn_error "Sample files are missing. Check sample directory: ${SAMPLE_DIR}." 2>&1 | tee -a "${LOGFILE}"
-    fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fastq.gz & ${SAMPLE_BASE}_R2.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
-    fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-    rm --force "${LOGFILE}"
-    exit 1
+    SAMPLE_R1="${SAMPLE}.end1.fastq.gz"
+    SAMPLE_R2="${SAMPLE}.end2.fastq.gz"
+    if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
+        fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
+        fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+    else
+        fn_error "Sample files are missing. Check sample directory: ${SAMPLE_DIR}/." 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fastq.gz & ${SAMPLE_BASE}_R2.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
+    fi
 fi
 
 # Check if a genome is provided
@@ -488,11 +515,18 @@ fi
 # If providing input, check that the input files exist
 if test "${DO_INPUT}" == 0 ; then
     if test ! -f "${INPUT_R1}" || test ! -f "${INPUT_R2}" ; then
-        fn_error "Input files are missing. Check them in ${INPUT_DIR}." 2>&1 | tee -a "${LOGFILE}"
-        fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fastq.gz & ${INPUT_BASE}_R2.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
-        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-        rm --force "${LOGFILE}"
-        exit 1
+        INPUT_R1="${INPUT}.end1.fastq.gz"
+        INPUT_R2="${INPUT}.end2.fastq.gz"
+        if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
+            fn_warning "Sample files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
+            fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+        else
+            fn_error "Input files are missing. Check input directory: ${INPUT_DIR}/." 2>&1 | tee -a "${LOGFILE}"
+            fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fastq.gz & ${INPUT_BASE}_R2.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
+            fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+            rm --force "${LOGFILE}"
+            exit 1
+        fi
     fi
 fi
 
