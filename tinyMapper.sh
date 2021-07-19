@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.8
+VERSION=0.9.9
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -428,9 +428,10 @@ fi
 
 # If sample files are accessed through ssh, download them first
 if [[ "${SAMPLE_DIR}" == *:* ]] ; then 
-    echo -e "Fetching sample files from remote."
-    scp "${SAMPLE}"* .
-    SAMPLE="./`basename ${SAMPLE}`"
+    echo -e "Fetching sample files from remote to \`./data/reads\`."
+    mkdir -P data/reads
+    scp "${SAMPLE}"* data/reads/
+    SAMPLE="data/reads/`basename ${SAMPLE}`"
     SAMPLE_DIR=`dirname "${SAMPLE}"`
     SAMPLE_BASE=`basename "${SAMPLE}"`
     SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
@@ -439,9 +440,10 @@ fi
 
 # If input files are accessed through ssh, download them first
 if [[ "${INPUT_DIR}" == *:* ]] ; then 
-    echo -e "Fetching input files from remote."
-    scp "${INPUT}"* .
-    INPUT="./`basename ${INPUT}`"
+    echo -e "Fetching input files from remote \`./data/reads\`."
+    mkdir -P data/reads
+    scp "${INPUT}"* data/reads/
+    INPUT="data/reads/`basename ${INPUT}`"
     INPUT_DIR=`dirname "${INPUT}"`
     INPUT_BASE=`basename "${INPUT}"`
     INPUT_R1="${INPUT}_R1.fastq.gz"
