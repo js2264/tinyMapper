@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.9
+VERSION=0.9.111
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -185,16 +185,16 @@ CPU=8
 
 # Custom values for test
 
-MODE=ChIP
-SAMPLE=sftpcampus:tmp/HB44
-INPUT=sftpcampus:tmp/HB42
-GENOME_=~/genomes/R64-1-1/R64-1-1
-SPIKEIN_=''
-OUTDIR=results
-FILTEROPTIONS='-F 4 -q 5'
-KEEPDUPLICATES=0
-CPU=16
-KEEPFILES=0
+# MODE=ChIP
+# SAMPLE=sftpcampus:tmp/HB44
+# INPUT=sftpcampus:tmp/HB42
+# GENOME_=~/genomes/R64-1-1/R64-1-1
+# SPIKEIN_=''
+# OUTDIR=results
+# FILTEROPTIONS='-F 4 -q 5'
+# KEEPDUPLICATES=0
+# CPU=16
+# KEEPFILES=0
 
 # MODE=HiC
 # SAMPLE=test
@@ -429,7 +429,7 @@ fi
 # If sample files are accessed through ssh, download them first
 if [[ "${SAMPLE_DIR}" == *:* ]] ; then 
     echo -e "Fetching sample files from remote to \`./data/reads\`."
-    mkdir -P data/reads
+    p data/reads
     scp "${SAMPLE}"* data/reads/
     SAMPLE="data/reads/`basename ${SAMPLE}`"
     SAMPLE_DIR=`dirname "${SAMPLE}"`
@@ -441,7 +441,7 @@ fi
 # If input files are accessed through ssh, download them first
 if [[ "${INPUT_DIR}" == *:* ]] ; then 
     echo -e "Fetching input files from remote \`./data/reads\`."
-    mkdir -P data/reads
+    mkdir -p data/reads
     scp "${INPUT}"* data/reads/
     INPUT="data/reads/`basename ${INPUT}`"
     INPUT_DIR=`dirname "${INPUT}"`
