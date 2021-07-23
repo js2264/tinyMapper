@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.12
+VERSION=0.9.13
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1181,7 +1181,6 @@ fi
 
 if test "${MODE}" == HiC ; then
     rm --force "${OUTDIR}"/tmp/*bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
-    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv 
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
     mv "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
@@ -1190,6 +1189,7 @@ if test "${MODE}" == HiC ; then
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_pcrfree.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
+    mv "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv
     mv "${OUTDIR}"/plots/event_distance.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
     mv "${OUTDIR}"/plots/frags_hist.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
 fi
