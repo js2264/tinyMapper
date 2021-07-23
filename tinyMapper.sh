@@ -647,15 +647,17 @@ echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "MODE        : ${MODE}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "SAMPLE      : ${SAMPLE}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "GENOME      : ${GENOME}" 2>&1 | tee -a "${LOGFILE}"
-if test "${DO_INPUT}" == 0 && test "${MODE}" == ChIP ; then
-    fn_log "INPUT       : ${INPUT}" 2>&1 | tee -a "${LOGFILE}"
-else 
-    fn_warning "Input reads not provided. Processing without input." 2>&1 | tee -a "${LOGFILE}"
-fi
-if test "${DO_CALIBRATION}" == 0 && test "${MODE}" == ChIP ; then
-    fn_log "SPIKEIN     : ${SPIKEIN}" 2>&1 | tee -a "${LOGFILE}"
-else
-    fn_warning "Spikein genome not provided. Processing without calibration." 2>&1 | tee -a "${LOGFILE}"
+if test "${MODE}" == ChIP ; then
+    if test "${DO_INPUT}" == 0 ; then
+        fn_log "INPUT       : ${INPUT}" 2>&1 | tee -a "${LOGFILE}"
+    else 
+        fn_warning "Input reads not provided. Processing without input." 2>&1 | tee -a "${LOGFILE}"
+    fi
+    if test "${DO_CALIBRATION}" == 0 ; then
+        fn_log "SPIKEIN     : ${SPIKEIN}" 2>&1 | tee -a "${LOGFILE}"
+    else
+        fn_warning "Spikein genome not provided. Processing without calibration." 2>&1 | tee -a "${LOGFILE}"
+    fi
 fi
 fn_log "Keep dups.  : `if test ${KEEPDUPLICATES} == 0 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
 fn_log "Align. opt. : ${BOWTIEOPTIONS}" 2>&1 | tee -a "${LOGFILE}"
