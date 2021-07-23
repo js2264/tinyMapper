@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.111
+VERSION=0.9.12
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -333,11 +333,11 @@ INPUT_R1="${INPUT}_R1.fastq.gz"
 INPUT_R2="${INPUT}_R2.fastq.gz"
 
 # - Specific files
+LOGFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${SAMPLE_BASE}_${HASH}_log.txt"
+CMDFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${SAMPLE_BASE}_${HASH}_commands.txt"
+SCRIPTFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${SAMPLE_BASE}_${HASH}_script.txt"
+TMPFILE="${OUTDIR}/`date "+%y%m%d"`-${SAMPLE_BASE}_${HASH}_INPROGRESS"
 STATFILE="${OUTDIR}/stats/sample-${SAMPLE_BASE}_input-${INPUT_BASE}_genome-${GENOME}_calibration-${SPIKEIN}_${HASH}".counts.tsv
-LOGFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${HASH}-log.txt"
-CMDFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${HASH}-commands.txt"
-SCRIPTFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${HASH}-script.txt"
-TMPFILE="${OUTDIR}/`date "+%y%m%d"`-${HASH}-INPROGRESS"
 
 # - Advanced options
 SAMTOOLS_OPTIONS=" -@ ${CPU} --output-fmt bam "
@@ -1162,6 +1162,12 @@ do
     echo -e "---" >> "${LOGFILE}"
 done
 
+if test "${MODE}" == HiC ; then
+    fn_log "HICSTUFF STATS:" >> "${LOGFILE}"
+    grep -P "mapped with|Filtering with thresholds|Proportion of inter contacts|pairs discarded|pairs kept|duplicates have been filtered out" "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff_[0-9]*.log | sed 's,.*:: ,,g' 2>&1 | tee -a "${LOGFILE}"
+    echo -e "---" >> "${LOGFILE}"
+fi
+
 if test "${DO_CALIBRATION}" == 0 ; then
     file="${STATFILE}"
     fn_log "CALIBRATION STATS: ${file}" >> "${LOGFILE}"
@@ -1206,6 +1212,7 @@ if test "${KEEPFILES}" == 1 ; then
     rm --force "${OUTDIR}"/fastq/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"*
     rm --force "${OUTDIR}"/fastq/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^"${HASH}"*
     rm --force "${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"*
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".cool
 fi
 
 ## ------------------------------------------------------------------
