@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.13
+VERSION=0.9.14
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -732,6 +732,7 @@ cmd="bowtie2 ${BOWTIEOPTIONS} \
     -x "${GENOME_BASE}" \
     -1 "${SAMPLE_R1}" \
     -2 "${SAMPLE_R2}" \
+    --maxins 1000 \
     --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
     > "${SAMPLE_ALIGNED_GENOME}"" 
 fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -743,6 +744,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         -x "${SPIKEIN_BASE}" \
         -1 "${SAMPLE_R1}" \
         -2 "${SAMPLE_R2}" \
+        --maxins 1000 \
         --un-conc-gz "${SAMPLE_NON_ALIGNED_CALIBRATION}".gz \
         > "${SAMPLE_ALIGNED_CALIBRATION}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -753,6 +755,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         -x "${GENOME_BASE}" \
         -1 "${SAMPLE_NON_ALIGNED_CALIBRATION}".1.gz \
         -2 "${SAMPLE_NON_ALIGNED_CALIBRATION}".2.gz \
+        --maxins 1000 \
         > "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
@@ -762,6 +765,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         -x "${SPIKEIN_BASE}" \
         -1 "${SAMPLE_NON_ALIGNED_GENOME}".1.gz \
         -2 "${SAMPLE_NON_ALIGNED_GENOME}".2.gz \
+        --maxins 1000 \
         > "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 fi
@@ -773,6 +777,7 @@ if test "${DO_INPUT}" == 0 ; then
         -x "${GENOME_BASE}" \
         -1 "${INPUT_R1}" \
         -2 "${INPUT_R2}" \
+        --maxins 1000 \
         --un-conc-gz "${INPUT_NON_ALIGNED_GENOME}".gz \
         > "${INPUT_ALIGNED_GENOME}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -784,6 +789,7 @@ if test "${DO_INPUT}" == 0 ; then
             -x "${SPIKEIN_BASE}" \
             -1 "${INPUT_R1}" \
             -2 "${INPUT_R2}" \
+            --maxins 1000 \
             --un-conc-gz "${INPUT_NON_ALIGNED_CALIBRATION}".gz \
             > "${INPUT_ALIGNED_CALIBRATION}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -794,6 +800,7 @@ if test "${DO_INPUT}" == 0 ; then
             -x "${GENOME_BASE}" \
             -1 "${INPUT_NON_ALIGNED_CALIBRATION}".1.gz \
             -2 "${INPUT_NON_ALIGNED_CALIBRATION}".2.gz \
+            --maxins 1000 \
             > "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}""
             fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
@@ -803,6 +810,7 @@ if test "${DO_INPUT}" == 0 ; then
             -x "${SPIKEIN_BASE}" \
             -1 "${INPUT_NON_ALIGNED_GENOME}".1.gz \
             -2 "${INPUT_NON_ALIGNED_GENOME}".2.gz \
+            --maxins 1000 \
             > "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     fi
@@ -1182,6 +1190,7 @@ fi
 if test "${MODE}" == HiC ; then
     rm --force "${OUTDIR}"/tmp/*bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv
     mv "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
