@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.14
+VERSION=0.9.15
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1084,7 +1084,7 @@ if test "${MODE}" == RNA ; then
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
         --outFileName "${SAMPLE_TRACK_FWD}" \
         --binSize 1 \
-        --numberOfProcessors 12 \
+        --numberOfProcessors "${CPU}" \
         "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
@@ -1098,7 +1098,7 @@ if test "${MODE}" == RNA ; then
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
         --outFileName "${SAMPLE_TRACK_REV}" \
         --binSize 1 \
-        --numberOfProcessors 12 \
+        --numberOfProcessors "${CPU}" \
         "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
