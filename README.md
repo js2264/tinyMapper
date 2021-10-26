@@ -140,19 +140,19 @@ Note that fastq files *MUST* be named following this convention:
 * **RNA-seq mode**:
 
     ```
-    ./tinyMapper.sh --mode RNA -s ~/testRNA -g ~/genomes/W303/W303 -o ~/results
+    ./tinyMapper.sh --mode RNA -s ./testRNA -g ~/genomes/W303/W303 -o ~/results
     ```
 
 * **MNase-seq mode**:
 
     ```
-    ./tinyMapper.sh --mode MNase -s ~/testMNase -g ~/genomes/W303/W303 -o ~/results
+    ./tinyMapper.sh --mode MNase -s ./testMNase -g ~/genomes/W303/W303 -o ~/results
     ```
 
 * **HiC mode**:
 
     ```
-    ./tinyMapper.sh --mode HiC -s ~/testHiC -g ~/genomes/W303/W303 -o ~/results --resolutions 1000,2000,8000 --restriction 'DpnII,HinfI'
+    ./tinyMapper.sh --mode HiC -s ./testHiC -g ~/genomes/W303/W303 -o ~/results --resolutions 1000,2000,8000 --restriction 'DpnII,HinfI'
     ```
 
 ### Acknowledgments

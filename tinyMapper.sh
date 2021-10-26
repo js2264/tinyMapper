@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.15
+VERSION=0.9.16
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -400,6 +400,7 @@ if test "${MODE}" == HiC ; then
     SAMPLE_ALIGNED_GENOME_REV="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.bam
     SAMPLE_COOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".cool
     SAMPLE_MCOOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".mcool
+    SAMPLE_HIC="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".hic
 fi
 
 mkdir -p "${OUTDIR}"/logs
@@ -602,6 +603,14 @@ if test "${MODE}" == HiC ; then
         rm --force "${LOGFILE}"
         exit 1
     fi
+    util=juicer_tools
+    if test -z `command -v "${util}"` ; then
+        fn_error "${util} does not seem to be installed or loaded. Install it as follows:" 2>&1 | tee -a "${LOGFILE}"
+        echo -e "pip install -U ${util}" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
+    fi
 fi
 
 ## ------------------------------------------------------------------
@@ -670,6 +679,7 @@ fn_log "samtools    : `type -P samtools` (version: `samtools --version | head -n
 fn_log "deeptools   : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "macs2       : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "hicstuff    : `type -P hicstuff` (version: `hicstuff --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "juicer_tools: `type -P juicer_tools` (version: `juicer_tools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "cooler      : `type -P cooler` (version: `cooler --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 
@@ -718,6 +728,17 @@ if test "${MODE}" == HiC ; then
         --balance-args \"--cis-only --min-nnz 3 --mad-max 7\" \
         --out "${SAMPLE_MCOOL}" \
         "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+    fn_log "Generating .hic file" 2>&1 | tee -a "${LOGFILE}"
+    cmd="grep -v '^#' "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1;
+    sed '1d' "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv | cut -f1,2 > tmp2;
+    juicer_tools pre \
+        -r "${HICREZ}" \
+        tmp1 \
+        "${SAMPLE_HIC}" \
+        tmp2;
+    rm tmp1 tmp2"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 ## ------------------------------------------------------------------
