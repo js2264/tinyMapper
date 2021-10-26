@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.16
+VERSION=0.9.17
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -18,12 +18,11 @@ function usage() {
     echo -e ""
     echo -e "================================================================================"
     echo -e ""
-    echo -e "---------------------- BASIC ARGUMENTS -----------------------------------------"
+    echo -e "---------------------- REQUIRED ARGUMENTS ---------------------------------------"
     echo -e ""
-    echo -e "   -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)"
+    echo -e "   -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC)"
     echo -e "   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)"
     echo -e "   -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)"
-    echo -e "   -h|--help                        Print help ('--help' for examples)"
     echo -e ""
     echo -e ""
     echo -e "---------------------- ADVANCED ARGUMENTS --------------------------------------"
@@ -49,6 +48,11 @@ function usage() {
     echo -e "   -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)"
     echo -e "   -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)"
     echo -e "   -k|--keepIntermediate            (Optional) Keep intermediate mapping files"
+    echo -e ""
+    echo -e ""
+    echo -e "---------------------- HELP ----------------------------------------------------"
+    echo -e ""
+    echo -e "   -h|--help                        Print help ('--help' for examples)"
     echo -e ""
 }
 
@@ -410,6 +414,14 @@ touch "${TMPFILE}"
 ## ------------------------------------------------------------------
 ## -------- CHECKING THAT ALL REQUIRED FILES EXIST ------------------
 ## ------------------------------------------------------------------
+
+# Check that mode is amongst possible modes (ChIP, MNase, ATAC, RNA, HiC)
+if test "${MODE}" == "ChIP" || test "${MODE}" == "MNase" || test "${MODE}" == "ATAC" || test "${MODE}" == "RNA" || test "${MODE}" == "HiC" ; then
+    fn_error "Mode has to be one of the following: ChIP MNase ATAC RNA HiC." 2>&1 | tee -a "${LOGFILE}"
+    fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+    rm --force "${LOGFILE}"
+    exit 1
+fi
 
 # Abort if trying to calibrate without input
 if test "${DO_INPUT}" == 1 && test "${DO_CALIBRATION}" == 0 ; then
