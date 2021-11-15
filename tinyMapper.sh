@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.17
+VERSION=0.9.18
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -416,7 +416,7 @@ touch "${TMPFILE}"
 ## ------------------------------------------------------------------
 
 # Check that mode is amongst possible modes (ChIP, MNase, ATAC, RNA, HiC)
-if test "${MODE}" == "ChIP" || test "${MODE}" == "MNase" || test "${MODE}" == "ATAC" || test "${MODE}" == "RNA" || test "${MODE}" == "HiC" ; then
+if test "${MODE}" != "ChIP" && test "${MODE}" != "MNase" && test "${MODE}" != "ATAC" && test "${MODE}" != "RNA" && test "${MODE}" != "HiC" ; then
     fn_error "Mode has to be one of the following: ChIP MNase ATAC RNA HiC." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     rm --force "${LOGFILE}"
