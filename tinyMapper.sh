@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.22
+VERSION=0.9.23
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -575,11 +575,9 @@ if test "${MODE}" == HiC ; then
     fi
     util=juicer_tools
     if test -z `command -v "${util}"` ; then
-        fn_error "${util} does not seem to be installed or loaded. Install it as follows:" 2>&1 | tee -a "${LOGFILE}"
-        echo -e "pip install -U ${util}" 2>&1 | tee -a "${LOGFILE}"
-        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-        rm --force "${LOGFILE}"
-        exit 1
+        fn_warning "${util} does not seem to be installed or loaded." 2>&1 | tee -a "${LOGFILE}"
+        fn_warning ".hic matrix file will not be generated." 2>&1 | tee -a "${LOGFILE}"
+        fn_warning "Continuing processing..." 2>&1 | tee -a "${LOGFILE}"
     fi
 fi
 
@@ -700,15 +698,18 @@ if test "${MODE}" == HiC ; then
         "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
-    fn_log "Generating .hic file" 2>&1 | tee -a "${LOGFILE}"
-    cmd="grep -v '^#' "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1;
-    sed '1d' "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv | cut -f1,2 > tmp2;
-    juicer_tools pre \
-        -r "${HICREZ}" \
-        tmp1 \
-        "${SAMPLE_HIC}" \
-        tmp2;
-    rm tmp1 tmp2"
+    if ! test -z `command -v "${util}"` ; then
+        fn_log "Generating .hic file" 2>&1 | tee -a "${LOGFILE}"
+        cmd="grep -v '^#' "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1;
+        sed '1d' "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv | cut -f1,2 > tmp2;
+        juicer_tools pre \
+            -r "${HICREZ}" \
+            tmp1 \
+            "${SAMPLE_HIC}" \
+            tmp2;
+        rm tmp1 tmp2"
+    fi
+
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 ## ------------------------------------------------------------------
