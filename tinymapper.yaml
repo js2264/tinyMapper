@@ -5,9 +5,12 @@ channels:
   - defaults
 dependencies:
   - bowtie2
+  - bedtools
   - deeptools
   - macs2
   - samtools
   - cooler
   - mawk
   - tree
+  - java-jdk
+  - ucsc-bedGraphToBigWig
