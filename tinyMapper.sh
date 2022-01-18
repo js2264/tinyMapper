@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.23
+VERSION=0.9.24
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -321,6 +321,7 @@ GENOME_DIR=`dirname "${GENOME_}"`
 GENOME=`basename "${GENOME_}"`
 GENOME_BASE="${GENOME_DIR}"/"${GENOME}"
 GENOME_FA="${GENOME_BASE}.fa"
+GENOME_SIZES="${GENOME_BASE}.chrom.sizes"
 SPIKEIN_DIR=`dirname "${SPIKEIN_}"`
 SPIKEIN=`basename "${SPIKEIN_}"`
 SPIKEIN_BASE="${SPIKEIN_DIR}"/"${SPIKEIN}"
@@ -476,6 +477,15 @@ if test ! -f "${GENOME_FA}" ; then
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     rm --force "${LOGFILE}"
     exit 1
+fi
+
+# Check that the genome chrom.sizes file exists
+if test ! -f "${GENOME_SIZES}" ; then
+    fn_warning ""${GENOME_SIZES}" does not exist." 2>&1 | tee -a "${LOGFILE}"
+    fn_warning "Attempting to generate it..." 2>&1 | tee -a "${LOGFILE}"
+    cmd="samtools faidx "${GENOME_FA}" && cat "${GENOME_FA}".fai | cut -f1-2 > "${GENOME_SIZES}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    fn_warning "Continuing..." 2>&1 | tee -a "${LOGFILE}"
 fi
 
 # If providing input, check that the input files exist
@@ -678,6 +688,14 @@ if test "${MODE}" == HiC ; then
         "${SAMPLE_R1}" "${SAMPLE_R2}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
+    fn_log "Computing coverage track" 2>&1 | tee -a "${LOGFILE}"
+    samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam
+    samtools sort  -@ "${CPU}" "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam > "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam
+    cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
+    bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg
+    bedGraphToBigWig "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}"
+    rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg
+
     fn_log "Binning cool file to ${FIRSTREZ} bp" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff rebin \
         --binning "${FIRSTREZ}" \
@@ -709,8 +727,6 @@ if test "${MODE}" == HiC ; then
             tmp2;
         rm tmp1 tmp2"
     fi
-
-    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 ## ------------------------------------------------------------------
 ## ------------------- MAPPING --------------------------------------
@@ -1190,6 +1206,7 @@ if test "${MODE}" == HiC ; then
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_pcrfree.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".CPM.bw "${SAMPLE_RAW_TRACK}"
     mv "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv
     mv "${OUTDIR}"/plots/event_distance.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
     mv "${OUTDIR}"/plots/frags_hist.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
