@@ -27,12 +27,6 @@ conda env create -f https://raw.githubusercontent.com/js2264/tinyMapper/master/t
 conda activate tinymapper
 ```
 
-If HiC is going to be mapped with `hicstuff`, don't forget to install it as well! 
-
-```sh
-pip install hicstuff
-```
-
 ### Usage 
 
 Just download `tinyMapper.sh` script and use it!

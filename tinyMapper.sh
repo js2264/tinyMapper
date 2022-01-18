@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.26
+VERSION=0.9.27
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -682,7 +682,8 @@ if test "${MODE}" == HiC ; then
         --enzyme "${RE}" \
         --outdir "${OUTDIR}" \
         --prefix "${SAMPLE_BASE}" \
-        "${HICSTUFFOPTIONS}" --force \
+        "${HICSTUFFOPTIONS}" \
+        --force \
         --matfmt cool \
         --genome "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta \
         "${SAMPLE_R1}" "${SAMPLE_R2}""
@@ -694,7 +695,6 @@ if test "${MODE}" == HiC ; then
     cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
     bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg
     bedGraphToBigWig "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}"
-    rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg
 
     fn_log "Binning cool file to ${FIRSTREZ} bp" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff rebin \
@@ -1197,9 +1197,14 @@ fi
 ## ------------------------------------------------------------------
 
 if test "${MODE}" == HiC ; then
+    # rm
     rm --force "${OUTDIR}"/tmp/*bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv
+    rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam 
+    rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam 
+    rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg
+    # mv
     mv "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
@@ -1207,7 +1212,6 @@ if test "${MODE}" == HiC ; then
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_pcrfree.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".CPM.bw "${SAMPLE_RAW_TRACK}"
     mv "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv
     mv "${OUTDIR}"/plots/event_distance.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
     mv "${OUTDIR}"/plots/frags_hist.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
