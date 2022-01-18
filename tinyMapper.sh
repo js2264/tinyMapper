@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.18
+VERSION=0.9.19
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -21,13 +21,13 @@ function usage() {
     echo -e "---------------------- REQUIRED ARGUMENTS ---------------------------------------"
     echo -e ""
     echo -e "   -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC)"
-    echo -e "   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)"
+    echo -e "   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fq.gz\` files, use \`--sample ~/reads/JS001\`)"
     echo -e "   -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)"
     echo -e ""
     echo -e ""
     echo -e "---------------------- ADVANCED ARGUMENTS --------------------------------------"
     echo -e ""
-    echo -e "   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`"
+    echo -e "   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fq.gz\`"
     echo -e "   -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
     echo -e "   -bl|--blacklist <BED>            Bed file of blacklist regions"
     echo -e "   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)"
@@ -329,12 +329,12 @@ SPIKEIN_FA="${SPIKEIN_BASE}.fa"
 # - Sample (input) variable
 SAMPLE_DIR=`dirname "${SAMPLE}"`
 SAMPLE_BASE=`basename "${SAMPLE}"`
-SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
-SAMPLE_R2="${SAMPLE}_R2.fastq.gz"
+SAMPLE_R1="${SAMPLE}_R1.fq.gz"
+SAMPLE_R2="${SAMPLE}_R2.fq.gz"
 INPUT_DIR=`dirname "${INPUT}"`
 INPUT_BASE=`basename "${INPUT}"`
-INPUT_R1="${INPUT}_R1.fastq.gz"
-INPUT_R2="${INPUT}_R2.fastq.gz"
+INPUT_R1="${INPUT}_R1.fq.gz"
+INPUT_R2="${INPUT}_R2.fq.gz"
 
 # - Specific files
 LOGFILE="${OUTDIR}/logs/`date "+%y%m%d"`-${SAMPLE_BASE}_${HASH}_log.txt"
@@ -447,8 +447,8 @@ if [[ "${SAMPLE_DIR}" == *:* ]] ; then
     SAMPLE="data/reads/`basename ${SAMPLE}`"
     SAMPLE_DIR=`dirname "${SAMPLE}"`
     SAMPLE_BASE=`basename "${SAMPLE}"`
-    SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
-    SAMPLE_R2="${SAMPLE}_R2.fastq.gz"
+    SAMPLE_R1="${SAMPLE}_R1.fq.gz"
+    SAMPLE_R2="${SAMPLE}_R2.fq.gz"
 fi
 
 # If input files are accessed through ssh, download them first
@@ -459,52 +459,52 @@ if [[ "${INPUT_DIR}" == *:* ]] ; then
     INPUT="data/reads/`basename ${INPUT}`"
     INPUT_DIR=`dirname "${INPUT}"`
     INPUT_BASE=`basename "${INPUT}"`
-    INPUT_R1="${INPUT}_R1.fastq.gz"
-    INPUT_R2="${INPUT}_R2.fastq.gz"
+    INPUT_R1="${INPUT}_R1.fq.gz"
+    INPUT_R2="${INPUT}_R2.fq.gz"
 fi
 
 # If several sample files are found, zcat all of them
-filestomerge=`ls "${SAMPLE}"*1*gz 2>/dev/null | grep -v "${SAMPLE}_R1.fastq.gz" | grep -v '.*_R2_.*' | grep -v '.*_2_.*' | grep -v '.*end2.*'`
+filestomerge=`ls "${SAMPLE}"_*1*gz 2>/dev/null | grep -v "${SAMPLE}_R1.fq.gz" | grep -v '.*_R2_.*' | grep -v '.*_2_.*' | grep -v '.*end2.*'`
 cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
 if [ "$cnt" -gt "1" ] ; then 
     echo -e "Merging several sample files together (R1):  `echo -n ${filestomerge}`"
-    zcat `ls "${SAMPLE}"*1*gz 2>/dev/null | grep -v "${SAMPLE}_R1.fastq.gz"` | gzip > "${SAMPLE}_R1.fastq.gz"
-    SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
+    zcat `ls "${SAMPLE}"_*1*gz 2>/dev/null | grep -v "${SAMPLE}_R1.fq.gz"` | gzip > "${SAMPLE}_R1.fq.gz"
+    SAMPLE_R1="${SAMPLE}_R1.fq.gz"
 fi
-filestomerge=`ls "${SAMPLE}"*2*gz 2>/dev/null | grep -v "${SAMPLE}_R2.fastq.gz" | grep -v '.*_R1_.*' | grep -v '.*_1_.*' | grep -v '.*end1.*'`
+filestomerge=`ls "${SAMPLE}"_*2*gz 2>/dev/null | grep -v "${SAMPLE}_R2.fq.gz" | grep -v '.*_R1_.*' | grep -v '.*_1_.*' | grep -v '.*end1.*'`
 cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
 if [ "$cnt" -gt "1" ] ; then 
     echo -e "Merging several sample files together (R2):  `echo -n ${filestomerge}`"
-    zcat `ls "${SAMPLE}"*2*gz 2>/dev/null | grep -v "${SAMPLE}_R2.fastq.gz"` | gzip > "${SAMPLE}_R2.fastq.gz"
-    SAMPLE_R2="${SAMPLE}_R2.fastq.gz"
+    zcat `ls "${SAMPLE}"_*2*gz 2>/dev/null | grep -v "${SAMPLE}_R2.fq.gz"` | gzip > "${SAMPLE}_R2.fq.gz"
+    SAMPLE_R2="${SAMPLE}_R2.fq.gz"
 fi
 
 # If several input files are found, zcat all of them
-filestomerge=`ls "${INPUT}"*1*gz 2>/dev/null | grep -v "${INPUT}_R1.fastq.gz" | grep -v '.*_R2_.*' | grep -v '.*_2_.*' | grep -v '.*end2.*'`
+filestomerge=`ls "${INPUT}"_*1*gz 2>/dev/null | grep -v "${INPUT}_R1.fq.gz" | grep -v '.*_R2_.*' | grep -v '.*_2_.*' | grep -v '.*end2.*'`
 cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
 if test "$cnt" -gt "1" && test "${DO_INPUT}" ==  0 ; then 
     echo -e "Merging several input files together (R1):  `echo -n ${filestomerge}`"
-    zcat "${INPUT}"*R1*gz | gzip > "${INPUT}_R1.fastq.gz"
-    INPUT_R1="${INPUT}_R1.fastq.gz"
+    zcat "${INPUT}"_*1*gz | gzip > "${INPUT}_R1.fq.gz"
+    INPUT_R1="${INPUT}_R1.fq.gz"
 fi
-filestomerge=`ls "${INPUT}"*2*gz 2>/dev/null | grep -v "${INPUT}_R2.fastq.gz" | grep -v '.*_R1_.*' | grep -v '.*_1_.*' | grep -v '.*end1.*'`
+filestomerge=`ls "${INPUT}"_*2*gz 2>/dev/null | grep -v "${INPUT}_R2.fq.gz" | grep -v '.*_R1_.*' | grep -v '.*_1_.*' | grep -v '.*end1.*'`
 cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
 if test "$cnt" -gt "1" && test "${DO_INPUT}" ==  0 ; then 
     echo -e "Merging several input files together (R2):  `echo -n ${filestomerge}`"
-    zcat "${INPUT}"*R2*gz | gzip > "${INPUT}_R2.fastq.gz"
-    INPUT_R2="${INPUT}_R2.fastq.gz"
+    zcat "${INPUT}"_*2*gz | gzip > "${INPUT}_R2.fq.gz"
+    INPUT_R2="${INPUT}_R2.fq.gz"
 fi
 
 # Check that sample files exist
 if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
-    SAMPLE_R1="${SAMPLE}.end1.fastq.gz"
-    SAMPLE_R2="${SAMPLE}.end2.fastq.gz"
+    SAMPLE_R1="${SAMPLE}.end1.fq.gz"
+    SAMPLE_R2="${SAMPLE}.end2.fq.gz"
     if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
         fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
         fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
     else
         fn_error "Sample files are missing. Check sample directory: ${SAMPLE_DIR}/." 2>&1 | tee -a "${LOGFILE}"
-        fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fastq.gz & ${SAMPLE_BASE}_R2.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fq.gz & ${SAMPLE_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
         fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
         rm --force "${LOGFILE}"
         exit 1
@@ -530,14 +530,14 @@ fi
 # If providing input, check that the input files exist
 if test "${DO_INPUT}" == 0 ; then
     if test ! -f "${INPUT_R1}" || test ! -f "${INPUT_R2}" ; then
-        INPUT_R1="${INPUT}.end1.fastq.gz"
-        INPUT_R2="${INPUT}.end2.fastq.gz"
+        INPUT_R1="${INPUT}.end1.fq.gz"
+        INPUT_R2="${INPUT}.end2.fq.gz"
         if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
             fn_warning "Sample files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
             fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
         else
             fn_error "Input files are missing. Check input directory: ${INPUT_DIR}/." 2>&1 | tee -a "${LOGFILE}"
-            fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fastq.gz & ${INPUT_BASE}_R2.fastq.gz" 2>&1 | tee -a "${LOGFILE}"
+            fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fq.gz & ${INPUT_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
             fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
             rm --force "${LOGFILE}"
             exit 1
