@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.20
+VERSION=0.9.21
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -437,38 +437,6 @@ if test `is_set "${SAMPLE_BASE}"` == 1 ; then
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     rm --force "${LOGFILE}"
     exit 1
-fi
-
-# If several sample files are found, zcat all of them
-filestomerge=`ls "${SAMPLE}"_*1*gz 2>/dev/null | grep -v "${SAMPLE}_R1.fq.gz" | grep -v '.*_R2_.*' | grep -v '.*_2_.*' | grep -v '.*end2.*'`
-cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
-if [ "$cnt" -gt "1" ] ; then 
-    echo -e "Merging several sample files together (R1):  `echo -n ${filestomerge}`"
-    zcat `ls "${SAMPLE}"_*1*gz 2>/dev/null | grep -v "${SAMPLE}_R1.fq.gz"` | gzip > "${SAMPLE}_R1.fq.gz"
-    SAMPLE_R1="${SAMPLE}_R1.fq.gz"
-fi
-filestomerge=`ls "${SAMPLE}"_*2*gz 2>/dev/null | grep -v "${SAMPLE}_R2.fq.gz" | grep -v '.*_R1_.*' | grep -v '.*_1_.*' | grep -v '.*end1.*'`
-cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
-if [ "$cnt" -gt "1" ] ; then 
-    echo -e "Merging several sample files together (R2):  `echo -n ${filestomerge}`"
-    zcat `ls "${SAMPLE}"_*2*gz 2>/dev/null | grep -v "${SAMPLE}_R2.fq.gz"` | gzip > "${SAMPLE}_R2.fq.gz"
-    SAMPLE_R2="${SAMPLE}_R2.fq.gz"
-fi
-
-# If several input files are found, zcat all of them
-filestomerge=`ls "${INPUT}"_*1*gz 2>/dev/null | grep -v "${INPUT}_R1.fq.gz" | grep -v '.*_R2_.*' | grep -v '.*_2_.*' | grep -v '.*end2.*'`
-cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
-if test "$cnt" -gt "1" && test "${DO_INPUT}" ==  0 ; then 
-    echo -e "Merging several input files together (R1):  `echo -n ${filestomerge}`"
-    zcat "${INPUT}"_*1*gz | gzip > "${INPUT}_R1.fq.gz"
-    INPUT_R1="${INPUT}_R1.fq.gz"
-fi
-filestomerge=`ls "${INPUT}"_*2*gz 2>/dev/null | grep -v "${INPUT}_R2.fq.gz" | grep -v '.*_R1_.*' | grep -v '.*_1_.*' | grep -v '.*end1.*'`
-cnt=`echo ${filestomerge} | tr ' ' '\n' | wc -l`
-if test "$cnt" -gt "1" && test "${DO_INPUT}" ==  0 ; then 
-    echo -e "Merging several input files together (R2):  `echo -n ${filestomerge}`"
-    zcat "${INPUT}"_*2*gz | gzip > "${INPUT}_R2.fq.gz"
-    INPUT_R2="${INPUT}_R2.fq.gz"
 fi
 
 # Check that sample files exist
