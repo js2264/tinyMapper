@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.19
+VERSION=0.9.20
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -437,30 +437,6 @@ if test `is_set "${SAMPLE_BASE}"` == 1 ; then
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     rm --force "${LOGFILE}"
     exit 1
-fi
-
-# If sample files are accessed through ssh, download them first
-if [[ "${SAMPLE_DIR}" == *:* ]] ; then 
-    echo -e "Fetching sample files from remote to \`./data/reads\`."
-    p data/reads
-    scp "${SAMPLE}"* data/reads/
-    SAMPLE="data/reads/`basename ${SAMPLE}`"
-    SAMPLE_DIR=`dirname "${SAMPLE}"`
-    SAMPLE_BASE=`basename "${SAMPLE}"`
-    SAMPLE_R1="${SAMPLE}_R1.fq.gz"
-    SAMPLE_R2="${SAMPLE}_R2.fq.gz"
-fi
-
-# If input files are accessed through ssh, download them first
-if [[ "${INPUT_DIR}" == *:* ]] ; then 
-    echo -e "Fetching input files from remote \`./data/reads\`."
-    mkdir -p data/reads
-    scp "${INPUT}"* data/reads/
-    INPUT="data/reads/`basename ${INPUT}`"
-    INPUT_DIR=`dirname "${INPUT}"`
-    INPUT_BASE=`basename "${INPUT}"`
-    INPUT_R1="${INPUT}_R1.fq.gz"
-    INPUT_R2="${INPUT}_R2.fq.gz"
 fi
 
 # If several sample files are found, zcat all of them
