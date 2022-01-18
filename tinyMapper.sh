@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.21
+VERSION=0.9.22
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -441,17 +441,24 @@ fi
 
 # Check that sample files exist
 if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
-    SAMPLE_R1="${SAMPLE}.end1.fq.gz"
-    SAMPLE_R2="${SAMPLE}.end2.fq.gz"
+    SAMPLE_R1="${SAMPLE}_nxq_R1.fq.gz"
+    SAMPLE_R2="${SAMPLE}_nxq_R2.fq.gz"
     if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
         fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
         fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
     else
-        fn_error "Sample files are missing. Check sample directory: ${SAMPLE_DIR}/." 2>&1 | tee -a "${LOGFILE}"
-        fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fq.gz & ${SAMPLE_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
-        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-        rm --force "${LOGFILE}"
-        exit 1
+        SAMPLE_R1="${SAMPLE}.end1.fq.gz"
+        SAMPLE_R2="${SAMPLE}.end2.fq.gz"
+        if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
+            fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
+            fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+        else
+            fn_error "Sample files are missing. Check sample directory: ${SAMPLE_DIR}/." 2>&1 | tee -a "${LOGFILE}"
+            fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fq.gz & ${SAMPLE_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
+            fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+            rm --force "${LOGFILE}"
+            exit 1
+        fi
     fi
 fi
 
@@ -474,17 +481,24 @@ fi
 # If providing input, check that the input files exist
 if test "${DO_INPUT}" == 0 ; then
     if test ! -f "${INPUT_R1}" || test ! -f "${INPUT_R2}" ; then
-        INPUT_R1="${INPUT}.end1.fq.gz"
-        INPUT_R2="${INPUT}.end2.fq.gz"
+        INPUT_R1="${INPUT}_nxq_R1.fq.gz"
+        INPUT_R2="${INPUT}_nxq_R2.fq.gz"
         if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
             fn_warning "Sample files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
             fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
         else
-            fn_error "Input files are missing. Check input directory: ${INPUT_DIR}/." 2>&1 | tee -a "${LOGFILE}"
-            fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fq.gz & ${INPUT_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
-            fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-            rm --force "${LOGFILE}"
-            exit 1
+            INPUT_R1="${INPUT}.end1.fq.gz"
+            INPUT_R2="${INPUT}.end2.fq.gz"
+            if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
+                fn_warning "Sample files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
+                fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+            else
+                fn_error "Input files are missing. Check input directory: ${INPUT_DIR}/." 2>&1 | tee -a "${LOGFILE}"
+                fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fq.gz & ${INPUT_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
+                fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+                rm --force "${LOGFILE}"
+                exit 1
+            fi
         fi
     fi
 fi
