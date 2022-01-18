@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.24
+VERSION=0.9.25
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -716,7 +716,7 @@ if test "${MODE}" == HiC ; then
         "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
-    if ! test -z `command -v "${util}"` ; then
+    if ! test -z `command -v juicer_tools` ; then
         fn_log "Generating .hic file" 2>&1 | tee -a "${LOGFILE}"
         cmd="grep -v '^#' "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1;
         sed '1d' "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv | cut -f1,2 > tmp2;
@@ -726,6 +726,7 @@ if test "${MODE}" == HiC ; then
             "${SAMPLE_HIC}" \
             tmp2;
         rm tmp1 tmp2"
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     fi
 
 ## ------------------------------------------------------------------
