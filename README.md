@@ -11,31 +11,16 @@ Currently, this workflow only works for **paired-end** data.
 
 ### Installation
 
-`tinyMapper.sh` can be directly downloaded from `GitHub`. It is a single script 
-file (`.sh`) which can be executed with: `./tinyMapper.sh`. 
-
 ```sh
-wget https://raw.githubusercontent.com/js2264/tinyMapper/master/tinyMapper.sh
-chmod +x tinyMapper.sh
-```
-
-Dependencies can be installed via conda. You can create and activate a conda 
-environment using the yaml file we provide as follows:
-
-```sh
-conda env create -f https://raw.githubusercontent.com/js2264/tinyMapper/master/tinymapper.yaml
-conda activate tinymapper
+cd ~
+git clone https://github.com/js2264/tinyMapper.git
+conda env create -n tm -f tinyMapper/tinymapper.yaml
+echo 'export PATH=$PATH:"~/tinyMapper/"' >> ~/.bashrc
+conda activate tm
+tinyMapper.sh --help
 ```
 
 ### Usage 
-
-Just download `tinyMapper.sh` script and use it!
-
-```sh
-wget https://raw.githubusercontent.com/js2264/tinyMapper/master/tinyMapper.sh
-chmod +x tinyMapper.sh
-./tinyMapper.sh -h
-```
 
 ```
 Usage: ./tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> [ additional arguments ]
@@ -43,14 +28,14 @@ Usage: ./tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --outpu
 ---------------------- BASIC ARGUMENTS -----------------------------------------
 
    -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)
-   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fastq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fastq.gz\` files, use \`--sample ~/reads/JS001\`)
+   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fq.gz\` files, use \`--sample ~/reads/JS001\`)
    -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)
    -h|--help                        Print help ('--help' for examples)
 
 
 ---------------------- ADVANCED ARGUMENTS --------------------------------------
 
-   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fastq.gz\`
+   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fq.gz\`
    -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration
    -bl|--blacklist <BED>            Bed file of blacklist regions
    -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)
@@ -73,8 +58,8 @@ Usage: ./tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --outpu
 
 Note that fastq files *MUST* be named following this convention:
    
-- **Read 1:** \*_R1.fastq.gz
-- **Read 2:** \*_R2.fastq.gz
+- **Read 1:** <SAMPLE>_R1.fq.gz
+- **Read 2:** <SAMPLE>_R2.fq.gz
 
 ### Examples
 

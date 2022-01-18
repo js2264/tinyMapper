@@ -5,6 +5,7 @@ channels:
   - defaults
 dependencies:
   - python=3.7
+  - matplotlib<=3.4
   - bowtie2
   - hicstuff
   - bedtools
