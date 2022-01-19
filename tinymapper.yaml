@@ -1,17 +1,17 @@
 name: tinymapper
 channels:
-  - conda-forge
   - bioconda
+  - conda-forge
   - defaults
 dependencies:
-  - python=3.7
+  - python
   - matplotlib<=3.4
+  - samtools>=1.11
   - bowtie2
   - hicstuff
   - bedtools
   - deeptools
   - macs2
-  - samtools
   - cooler
   - mawk
   - tree
