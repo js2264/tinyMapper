@@ -12,10 +12,10 @@ Currently, this workflow only works for **paired-end** data.
 ### Installation
 
 ```sh
-cd ~
+mkdir ~/bin/ && cd ~/bin/
 git clone https://github.com/js2264/tinyMapper.git
-conda env create -n tm -f tinyMapper/tinymapper.yaml
-echo 'export PATH=$PATH:"~/tinyMapper/"' >> ~/.bashrc
+conda env create -n tm -f ~/bin/tinyMapper/tinymapper.yaml
+echo 'export PATH=$PATH:"~/bin/tinyMapper/"' >> ~/.bashrc
 conda activate tm
 tinyMapper.sh --help
 ```
@@ -61,11 +61,33 @@ Note that fastq files *MUST* be named following this convention:
 - **Read 1:** <SAMPLE>_R1.fq.gz
 - **Read 2:** <SAMPLE>_R2.fq.gz
 
+### Using tinyMapper on a cluster with Slurm
+
+Make sure tinyMapper script (`tinyMapper.sh`) is available by adding its location to your path (`echo 'export PATH=$PATH:"~/bin/tinyMapper/"' >> ~/.bashrc`).
+
+```sh
+conda activate tm
+sbatch --mem 32G -c 32 --wrap "tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> --threads 32"
+# For ChIP processing pipelines
+# - Without input
+sbatch --mem 32G -c 32 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP -g ~/appascratch/genomes/S288c/S288c  --threads 32"
+# - With input and without calibration
+sbatch --mem 32G -c 32 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP.IP -i tests/testChIP.input -g ~/appascratch/genomes/S288c/S288c  --threads 32"
+# - With input and with calibration
+sbatch --mem 32G -c 32 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP.IP -i tests/testChIP.input -g ~/appascratch/genomes/S288c/S288c -c ~/appascratch/genomes/CBS138/CBS138 --threads 32"
+# For RNA processing pipelines
+sbatch --mem 32G -c 32 --wrap "tinyMapper.sh -m RNA -s tests/testRNA -g ~/appascratch/genomes/S288c/S288c --threads 32"
+# For MNase processing pipelines
+sbatch --mem 32G -c 32 --wrap "tinyMapper.sh --mode MNase --sample tests/testMNase --genome ~/appascratch/genomes/S288c/S288c --threads 32"
+# For Hi-C processing pipelines
+sbatch --mem 32G -c 32 --wrap "tinyMapper.sh --mode HiC --sample tests/testHiC --genome ~/appascratch/genomes/S288c/S288c --threads 32"
+```
+
 ### Examples
 
 * **ChIP-seq mode**:
 
-    - Without input:               
+    - Without input:
 
         ```
         ./tinyMapper.sh \
@@ -139,4 +161,7 @@ The default steps are:
 
 ### Acknowledgments
 
-Many thanks to H. Bordelet for sharing her mapping scripts and configuration. 
+- A. Cournac, A. Bignaud & F. Girard for tests.
+- H. Bordelet for sharing her mapping scripts and configuration. 
+- L. Meneu for suggestions of improvements in documentation and raising bugs.
+
