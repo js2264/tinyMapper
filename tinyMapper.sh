@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.30
+VERSION=0.9.31
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -713,8 +713,8 @@ if test "${MODE}" == HiC ; then
 
     fn_log "Computing coverage track" 2>&1 | tee -a "${LOGFILE}"
     samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam
-    samtools sort  -@ "${CPU}" "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam > "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam
-    cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
+    samtools sort -@ "${CPU}" -T "${OUTDIR}"/tmp/"${SAMPLE_BASE}"_sorting "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam | samtools markdup -@ "${CPU}" -r -T "${OUTDIR}"/tmp/"${SAMPLE_BASE}"_markdup - - > "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam
+    cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
     bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg
     bedGraphToBigWig "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}"
 
