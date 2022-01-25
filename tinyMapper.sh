@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.0
+VERSION=0.10.1
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -445,6 +445,7 @@ fi
 #       "${SAMPLE}_R1.fastq.gz"
 #       "${SAMPLE}_nxq_R1.fq.gz"
 #       "${SAMPLE}.end1.fq.gz"
+#       "${SAMPLE}.end1.gz"
 if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
     SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
     SAMPLE_R2="${SAMPLE}_R2.fastq.gz"
@@ -464,11 +465,18 @@ if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
                 fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
                 fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
             else
-                fn_error "Sample files not found. Check sample directory: ${SAMPLE_DIR}/." 2>&1 | tee -a "${LOGFILE}"
-                fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fq.gz & ${SAMPLE_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
-                fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-                rm --force "${LOGFILE}"
-                exit 1
+                SAMPLE_R1="${SAMPLE}.end1.gz"
+                SAMPLE_R2="${SAMPLE}.end2.gz"
+                if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
+                    fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
+                    fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                else
+                    fn_error "Sample files not found. Check sample directory: ${SAMPLE_DIR}/." 2>&1 | tee -a "${LOGFILE}"
+                    fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fq.gz & ${SAMPLE_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
+                    fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+                    rm --force "${LOGFILE}"
+                    exit 1
+                fi
             fi
         fi
     fi
@@ -503,7 +511,7 @@ fi
 #       "${INPUT}_R1.fq.gz" [DEFAULT]
 #       "${INPUT}_R1.fastq.gz"
 #       "${INPUT}_nxq_R1.fq.gz"
-#       "${INPUT}.end1.fq.gz"
+#       "${INPUT}.end1.gz"
 if test "${DO_INPUT}" == 0 ; then
     if test ! -f "${INPUT_R1}" || test ! -f "${INPUT_R2}" ; then
         INPUT_R1="${INPUT}_R1.fastq.gz"
@@ -524,11 +532,18 @@ if test "${DO_INPUT}" == 0 ; then
                     fn_warning "Sample files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
                     fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
                 else
-                    fn_error "Input files are missing. Check input directory: ${INPUT_DIR}/." 2>&1 | tee -a "${LOGFILE}"
-                    fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fq.gz & ${INPUT_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
-                    fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-                    rm --force "${LOGFILE}"
-                    exit 1
+                    INPUT_R1="${INPUT}.end1.gz"
+                    INPUT_R2="${INPUT}.end2.gz"
+                    if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
+                        fn_warning "Sample files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
+                        fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                    else
+                        fn_error "Input files are missing. Check input directory: ${INPUT_DIR}/." 2>&1 | tee -a "${LOGFILE}"
+                        fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fq.gz & ${INPUT_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
+                        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+                        rm --force "${LOGFILE}"
+                        exit 1
+                    fi
                 fi
             fi
         fi
@@ -609,7 +624,6 @@ if test "${MODE}" == HiC ; then
     if test -z `command -v "${util}"` ; then
         fn_warning "${util} does not seem to be installed or loaded." 2>&1 | tee -a "${LOGFILE}"
         fn_warning ".hic matrix file will not be generated." 2>&1 | tee -a "${LOGFILE}"
-        fn_warning "Continuing processing..." 2>&1 | tee -a "${LOGFILE}"
     fi
 fi
 
@@ -778,7 +792,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --maxins 1000 \
         --un-conc-gz "${SAMPLE_NON_ALIGNED_CALIBRATION}".gz \
         > "${SAMPLE_ALIGNED_CALIBRATION}""
-        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     
     fn_log "Mapping sample reads non-mapped on spikein genome to reference genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="bowtie2 ${BOWTIEOPTIONS} \
@@ -833,7 +847,7 @@ if test "${DO_INPUT}" == 0 ; then
             -2 "${INPUT_NON_ALIGNED_CALIBRATION}".2.gz \
             --maxins 1000 \
             > "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}""
-            fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fn_log "Mapping input reads non-mapped on reference genome to spikein genome" 2>&1 | tee -a "${LOGFILE}"
         cmd="bowtie2 ${BOWTIEOPTIONS} \
