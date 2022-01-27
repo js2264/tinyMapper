@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.6
+VERSION=0.10.7
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1133,7 +1133,6 @@ if test "${MODE}" == RNA ; then
         "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
-        --extendReads \
         --ignoreDuplicates \
         --filterRNAstrand forward"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -1147,7 +1146,6 @@ if test "${MODE}" == RNA ; then
         "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
-        --extendReads \
         --ignoreDuplicates \
         --filterRNAstrand reverse"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
