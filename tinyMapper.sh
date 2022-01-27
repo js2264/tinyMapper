@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.5
+VERSION=0.10.6
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1250,8 +1250,10 @@ if test "${MODE}" == HiC ; then
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_pcrfree.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
     mv "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv
-    mv "${OUTDIR}"/plots/event_distance.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
-    mv "${OUTDIR}"/plots/frags_hist.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_event_distance.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_frags_hist.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_event_distribution.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distribution.pdf
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_distance_law.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".distance_law.pdf
 fi
 
 if test "${KEEPFILES}" == 1 ; then
