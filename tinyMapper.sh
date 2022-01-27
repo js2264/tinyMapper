@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.7
+VERSION=0.10.8
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -980,7 +980,7 @@ fi
 ## ------------------- TRACKS ---------------------------------------
 ## ------------------------------------------------------------------
 
-if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
+if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC && test "${MODE}" != RNA ; then
 
     fn_log "Generating CPM track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
     cmd="bamCoverage \
@@ -1124,6 +1124,18 @@ fi
 
 if test "${MODE}" == RNA ; then 
 
+    fn_log "Generating CPM track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
+    cmd="bamCoverage \
+        --bam "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
+        --outFileName "${SAMPLE_RAW_TRACK}" \
+        --binSize 1 \
+        --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
+        --normalizeUsing CPM \
+        --skipNonCoveredRegions \
+        --ignoreDuplicates"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
     fn_log "Generating forward track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
     cmd="bamCoverage \
         --bam "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
@@ -1133,6 +1145,7 @@ if test "${MODE}" == RNA ; then
         "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
+        --extendReads \
         --ignoreDuplicates \
         --filterRNAstrand forward"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -1146,6 +1159,7 @@ if test "${MODE}" == RNA ; then
         "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
+        --extendReads \
         --ignoreDuplicates \
         --filterRNAstrand reverse"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
