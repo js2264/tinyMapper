@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.1
+VERSION=0.10.5
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1234,7 +1234,8 @@ fi
 
 if test "${MODE}" == HiC ; then
     # rm
-    rm --force "${OUTDIR}"/tmp/*bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
+    rm --force "${OUTDIR}"/tmp/"${SAMPLE_BASE}"*bt2
+    rm --force "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv
     rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam 

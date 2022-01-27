@@ -5,10 +5,9 @@ channels:
   - defaults
 dependencies:
   - python
-  - matplotlib<=3.4
-  - samtools>=1.11
+  - matplotlib
+  - samtools
   - bowtie2
-  - hicstuff
   - bedtools
   - deeptools
   - macs2
@@ -17,3 +16,6 @@ dependencies:
   - tree
   - java-jdk
   - ucsc-bedGraphToBigWig
+  - numpydoc
+  - pip:
+    - git+https://github.com/koszullab/hicstuff.git@94c3014fbc69f1cea897d8066d503301e41bf774
