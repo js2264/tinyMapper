@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.9
+VERSION=0.10.10
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -403,9 +403,18 @@ fi
 if test "${MODE}" == HiC ; then 
     SAMPLE_ALIGNED_GENOME_FWD="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.bam
     SAMPLE_ALIGNED_GENOME_REV="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.bam
-    SAMPLE_COOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".cool
-    SAMPLE_MCOOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".mcool
-    SAMPLE_HIC="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".hic
+    SAMPLE_COOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${GENOME}"^"${HASH}".cool
+    SAMPLE_MCOOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${GENOME}"^"${HASH}".mcool
+    SAMPLE_HIC="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${GENOME}"^"${HASH}".hic
+    SAMPLE_PAIRS_VALID="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs
+    SAMPLE_PAIRS_VALID_IDX="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
+    SAMPLE_PAIRS_VALID_IDX_FILTERED="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
+    SAMPLE_PAIRS_VALID_IDX_PCRFREE="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
+    SAMPLE_PAIRS_FRAGS="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv
+    SAMPLE_PAIRS_DIST="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
+    SAMPLE_PAIRS_HIST="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
+    SAMPLE_PAIRS_DISTR="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distribution.pdf
+    SAMPLE_PAIRS_LAW="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".distance_law.pdf
 fi
 
 mkdir -p "${OUTDIR}"/logs
@@ -717,7 +726,7 @@ if test "${MODE}" == HiC ; then
         --threads "${CPU}" \
         --enzyme "${RE}" \
         --outdir "${OUTDIR}" \
-        --prefix "${SAMPLE_BASE}" \
+        --prefix "${SAMPLE_BASE}"^"${HASH}" \
         "${HICSTUFFOPTIONS}" \
         --force \
         --matfmt cool \
@@ -726,20 +735,20 @@ if test "${MODE}" == HiC ; then
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Computing coverage track" 2>&1 | tee -a "${LOGFILE}"
-    samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".for.bam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".rev.bam
-    samtools sort -@ "${CPU}" -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"_sorting "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bam | samtools markdup -@ "${CPU}" -r -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"_markdup - - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".sorted.bam
-    cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".sorted.bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
-    bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bg
-    bedGraphToBigWig "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}"
+    samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".for.bam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".rev.bam
+    samtools sort -@ "${CPU}" -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}"_sorting "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam | samtools markdup -@ "${CPU}" -r -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}"_markdup - - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam
+    cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
+    bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
+    bedGraphToBigWig "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}"
 
     fn_log "Binning cool file to ${FIRSTREZ} bp" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff rebin \
         --binning "${FIRSTREZ}" \
-        --frags "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv \
-        --chroms "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv \
+        --frags "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv \
+        --chroms "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv \
         --force \
-        "${OUTDIR}"/"${SAMPLE_BASE}".cool \
-        "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}""
+        "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".cool \
+        "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating .mcool file" 2>&1 | tee -a "${LOGFILE}"
@@ -749,13 +758,13 @@ if test "${MODE}" == HiC ; then
         --balance \
         --balance-args \"--cis-only --min-nnz 3 --mad-max 7\" \
         --out "${SAMPLE_MCOOL}" \
-        "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool"
+        "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}".cool"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     if ! test -z `command -v juicer_tools` ; then
         fn_log "Generating .hic file" 2>&1 | tee -a "${LOGFILE}"
-        cmd="grep -v '^#' "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1;
-        sed '1d' "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv | cut -f1,2 > tmp2;
+        cmd="grep -v '^#' "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1;
+        sed '1d' "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv | cut -f1,2 > tmp2;
         juicer_tools pre \
             -r "${HICREZ}" \
             tmp1 \
@@ -1215,7 +1224,7 @@ echo -e "---" >> "${LOGFILE}"
 if test "${DO_CALIBRATION}" == 0 ; then
     files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" 
 elif test "${MODE}" == HiC ; then
-    files="${OUTDIR}/tmp/"${HASH}"/${SAMPLE_BASE}.for.bam ${OUTDIR}/tmp/"${HASH}"/${SAMPLE_BASE}.rev.bam"
+    files="${OUTDIR}/tmp/"${HASH}"/${SAMPLE_BASE}^"${HASH}".for.bam ${OUTDIR}/tmp/"${HASH}"/${SAMPLE_BASE}^"${HASH}".rev.bam"
 else 
     files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_ALIGNED_GENOME_FILTERED}"
 fi
@@ -1229,7 +1238,7 @@ done
 
 if test "${MODE}" == HiC ; then
     fn_log "HICSTUFF STATS:" >> "${LOGFILE}"
-    grep -P "mapped with|Filtering with thresholds|Proportion of inter contacts|pairs discarded|pairs kept|duplicates have been filtered out" "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff_[0-9]*.log | sed 's,.*:: ,,g' 2>&1 | tee -a "${LOGFILE}"
+    grep -P "mapped with|Filtering with thresholds|Proportion of inter contacts|pairs discarded|pairs kept|duplicates have been filtered out" "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".hicstuff_[0-9]*.log | sed 's,.*:: ,,g' 2>&1 | tee -a "${LOGFILE}"
     echo -e "---" >> "${LOGFILE}"
 fi
 
@@ -1246,26 +1255,26 @@ fi
 
 if test "${MODE}" == HiC ; then
     # rm
-    rm --force "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"*bt2
-    rm --force "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".genome.fasta
-    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
-    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv
-    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bam 
-    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".sorted.bam 
-    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bg
+    rm --force "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}"*bt2
+    rm --force "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".genome.fasta
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".hicstuff*
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv
+    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam 
+    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam 
+    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
     # mv
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid_idx.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid_idx_filtered.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid_idx_pcrfree.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
-    mv "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_event_distance.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_frags_hist.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_event_distribution.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distribution.pdf
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_distance_law.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".distance_law.pdf
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs "${SAMPLE_PAIRS_VALID}"
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs "${SAMPLE_PAIRS_VALID_IDX}"
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs "${SAMPLE_PAIRS_VALID_IDX_FILTERED}"
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}"
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}"
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}"
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}"
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distribution.pdf "${SAMPLE_PAIRS_DISTR}"
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_distance_law.pdf "${SAMPLE_PAIRS_LAW}"
 fi
 
 if test "${KEEPFILES}" == 1 ; then
@@ -1286,7 +1295,7 @@ if test "${KEEPFILES}" == 1 ; then
     rm --force "${OUTDIR}"/fastq/spikein/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"*
     rm --force "${OUTDIR}"/fastq/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^"${HASH}"*
     rm --force "${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"*
-    rm --force "${OUTDIR}"/"${SAMPLE_BASE}".cool
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".cool
 fi
 
 ## ------------------------------------------------------------------
