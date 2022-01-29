@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.10
+VERSION=0.10.11
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -403,18 +403,18 @@ fi
 if test "${MODE}" == HiC ; then 
     SAMPLE_ALIGNED_GENOME_FWD="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.bam
     SAMPLE_ALIGNED_GENOME_REV="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.bam
-    SAMPLE_COOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${GENOME}"^"${HASH}".cool
-    SAMPLE_MCOOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${GENOME}"^"${HASH}".mcool
-    SAMPLE_HIC="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${GENOME}"^"${HASH}".hic
-    SAMPLE_PAIRS_VALID="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs
-    SAMPLE_PAIRS_VALID_IDX="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
-    SAMPLE_PAIRS_VALID_IDX_FILTERED="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
-    SAMPLE_PAIRS_VALID_IDX_PCRFREE="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
-    SAMPLE_PAIRS_FRAGS="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv
-    SAMPLE_PAIRS_DIST="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
-    SAMPLE_PAIRS_HIST="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
-    SAMPLE_PAIRS_DISTR="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distribution.pdf
-    SAMPLE_PAIRS_LAW="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".distance_law.pdf
+    SAMPLE_COOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".cool
+    SAMPLE_MCOOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".mcool
+    SAMPLE_HIC="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".hic
+    SAMPLE_PAIRS_VALID="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".valid.pairs
+    SAMPLE_PAIRS_VALID_IDX="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".valid_idx.pairs
+    SAMPLE_PAIRS_VALID_IDX_FILTERED="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".valid_idx_filtered.pairs
+    SAMPLE_PAIRS_VALID_IDX_PCRFREE="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".valid_idx_pcrfree.pairs
+    SAMPLE_PAIRS_FRAGS="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".frags.tsv
+    SAMPLE_PAIRS_DIST="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".event_distance.pdf
+    SAMPLE_PAIRS_HIST="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".frags_hist.pdf
+    SAMPLE_PAIRS_DISTR="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".event_distribution.pdf
+    SAMPLE_PAIRS_LAW="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".distance_law.pdf
 fi
 
 mkdir -p "${OUTDIR}"/logs
