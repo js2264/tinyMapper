@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.8
+VERSION=0.10.9
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -179,7 +179,7 @@ OUTDIR='results'
 BOWTIEOPTIONS=''
 FILTEROPTIONS='-f 2 -q 10'
 HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
-HICREZ='10000,20000,40000,160000,1280000'
+HICREZ='1000,2000,4000,8000,16000'
 MNASESIZES='70,250'
 RE=' DpnII,HinfI '
 BLACKLISTBEDFILE=''
@@ -504,7 +504,7 @@ if test ! -f "${GENOME_SIZES}" ; then
     fn_warning "Attempting to generate it..." 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools faidx "${GENOME_FA}" && cat "${GENOME_FA}".fai | cut -f1-2 > "${GENOME_SIZES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
-    fn_warning "Continuing..." 2>&1 | tee -a "${LOGFILE}"
+    fn_warning "Success. Continuing..." 2>&1 | tee -a "${LOGFILE}"
 fi
 
 # If providing input, check that the input files exist. Try different patterns: 
@@ -703,14 +703,14 @@ echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 
 if test "${MODE}" == HiC ; then
 
-    mkdir -p "${OUTDIR}"/tmp/
-    cp "${GENOME_BASE}".fa "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta
-    cp "${GENOME_BASE}".1.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.1.bt2
-    cp "${GENOME_BASE}".2.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.2.bt2
-    cp "${GENOME_BASE}".3.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.3.bt2
-    cp "${GENOME_BASE}".4.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.4.bt2
-    cp "${GENOME_BASE}".rev.1.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.rev.1.bt2
-    cp "${GENOME_BASE}".rev.2.bt2 "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta.rev.2.bt2
+    mkdir -p "${OUTDIR}"/tmp/"${HASH}"
+    cp "${GENOME_BASE}".fa "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta
+    cp "${GENOME_BASE}".1.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.1.bt2
+    cp "${GENOME_BASE}".2.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.2.bt2
+    cp "${GENOME_BASE}".3.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.3.bt2
+    cp "${GENOME_BASE}".4.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.4.bt2
+    cp "${GENOME_BASE}".rev.1.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.rev.1.bt2
+    cp "${GENOME_BASE}".rev.2.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.rev.2.bt2
 
     fn_log "Processing sample reads with hicstuff" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff pipeline \
@@ -721,16 +721,16 @@ if test "${MODE}" == HiC ; then
         "${HICSTUFFOPTIONS}" \
         --force \
         --matfmt cool \
-        --genome "${OUTDIR}"/tmp/${SAMPLE_BASE}.genome.fasta \
+        --genome "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta \
         "${SAMPLE_R1}" "${SAMPLE_R2}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Computing coverage track" 2>&1 | tee -a "${LOGFILE}"
-    samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam
-    samtools sort -@ "${CPU}" -T "${OUTDIR}"/tmp/"${SAMPLE_BASE}"_sorting "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam | samtools markdup -@ "${CPU}" -r -T "${OUTDIR}"/tmp/"${SAMPLE_BASE}"_markdup - - > "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam
-    cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
-    bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg
-    bedGraphToBigWig "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}"
+    samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".for.bam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".rev.bam
+    samtools sort -@ "${CPU}" -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"_sorting "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bam | samtools markdup -@ "${CPU}" -r -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"_markdup - - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".sorted.bam
+    cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".sorted.bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
+    bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bg
+    bedGraphToBigWig "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}"
 
     fn_log "Binning cool file to ${FIRSTREZ} bp" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff rebin \
@@ -754,7 +754,7 @@ if test "${MODE}" == HiC ; then
 
     if ! test -z `command -v juicer_tools` ; then
         fn_log "Generating .hic file" 2>&1 | tee -a "${LOGFILE}"
-        cmd="grep -v '^#' "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1;
+        cmd="grep -v '^#' "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1;
         sed '1d' "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv | cut -f1,2 > tmp2;
         juicer_tools pre \
             -r "${HICREZ}" \
@@ -1215,7 +1215,7 @@ echo -e "---" >> "${LOGFILE}"
 if test "${DO_CALIBRATION}" == 0 ; then
     files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" 
 elif test "${MODE}" == HiC ; then
-    files="${OUTDIR}/tmp/${SAMPLE_BASE}.for.bam ${OUTDIR}/tmp/${SAMPLE_BASE}.rev.bam"
+    files="${OUTDIR}/tmp/"${HASH}"/${SAMPLE_BASE}.for.bam ${OUTDIR}/tmp/"${HASH}"/${SAMPLE_BASE}.rev.bam"
 else 
     files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_ALIGNED_GENOME_FILTERED}"
 fi
@@ -1246,21 +1246,21 @@ fi
 
 if test "${MODE}" == HiC ; then
     # rm
-    rm --force "${OUTDIR}"/tmp/"${SAMPLE_BASE}"*bt2
-    rm --force "${OUTDIR}"/tmp/"${SAMPLE_BASE}".genome.fasta
+    rm --force "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"*bt2
+    rm --force "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".genome.fasta
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".hicstuff*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}".chr.tsv
-    rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bam 
-    rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".sorted.bam 
-    rm "${OUTDIR}"/tmp/"${SAMPLE_BASE}".bg
+    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bam 
+    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".sorted.bam 
+    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".bg
     # mv
     mv "${OUTDIR}"/"${SAMPLE_BASE}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_filtered.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}".valid_idx_pcrfree.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid_idx.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid_idx_filtered.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs
+    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}".valid_idx_pcrfree.pairs "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs
     mv "${OUTDIR}"/"${SAMPLE_BASE}".frags.tsv "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_event_distance.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".event_distance.pdf
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"_frags_hist.pdf "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^"${HASH}".frags_hist.pdf
