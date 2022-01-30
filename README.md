@@ -12,10 +12,47 @@ Currently, this workflow only works for **paired-end** data.
 ### Installation
 
 ```sh
-mkdir ~/bin/ && cd ~/bin/
+DESTINATION=~/bin/
+mkdir ${DESTINATION} 
+cd ${DESTINATION}
 git clone https://github.com/js2264/tinyMapper.git
-conda env create -n tm -f ~/bin/tinyMapper/tinymapper.yaml
-echo 'export PATH=$PATH:"~/bin/tinyMapper/"' >> ~/.bashrc
+conda env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
+echo 'export PATH=$PATH:"'${DESTINATION}'/tinyMapper/"' >> ~/.bashrc
+conda activate tm
+tinyMapper.sh --help
+```
+
+In more details: 
+
+- Choose a directory to install tinyMapper in (typically, a local `~/bin/` directory is appropriate here): 
+
+```sh
+DESTINATION=~/bin/
+mkdir ${DESTINATION} 
+cd ${DESTINATION}
+```
+
+- Clone tinyMapper's GitHub repository:
+
+```sh
+git clone https://github.com/js2264/tinyMapper.git
+```
+
+- Install tinyMapper requirements using `conda` (assumes that `conda` is already installed...):
+
+```sh
+conda env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
+```
+
+- Add tinyMapper script to your PATH so you can call it by `tinyMapper.sh`, rather than `~/bin/tinyMapper/tinyMapper.sh`:
+
+```sh
+echo 'export PATH=$PATH:"'${DESTINATION}'/tinyMapper/"' >> ~/.bashrc
+```
+
+- Activate the created `conda` environemnt and start using `tinyMapper.sh`: 
+
+```sh
 conda activate tm
 tinyMapper.sh --help
 ```
@@ -56,10 +93,12 @@ Usage: ./tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --outpu
    -k|--keepIntermediate            (Optional) Keep intermediate mapping files
 ```
 
-Note that fastq files *MUST* be named following this convention:
+Note that fastq files shoud ideally be named following this convention:
    
-- **Read 1:** <SAMPLE>_R1.fq.gz
-- **Read 2:** <SAMPLE>_R2.fq.gz
+- **Read 1:** \<SAMPLE\>_R1.fq.gz
+- **Read 2:** \<SAMPLE\>_R2.fq.gz
+
+Alternatively, the script will try to find paired-end files named \<SAMPLE\>_R[12].fastq.gz, \<SAMPLE\>_nxq_R[12].fq.gz, \<SAMPLE\>.end1.fq.gz or \<SAMPLE\>.end[12].gz. 
 
 ### Using tinyMapper on a cluster with Slurm
 
