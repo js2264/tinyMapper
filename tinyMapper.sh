@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.10.11
+VERSION=0.10.12
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -201,7 +201,7 @@ CPU=8
 # KEEPFILES=0
 
 # MODE=HiC
-# SAMPLE=test
+# SAMPLE=test/testHiC
 # GENOME_=~/genomes/W303/W303
 # HICREZ='1000,2000,4000,8000'
 # KEEPFILES=0
@@ -420,6 +420,24 @@ fi
 mkdir -p "${OUTDIR}"/logs
 touch "${LOGFILE}"
 touch "${TMPFILE}"
+
+## ------------------------------------------------------------------
+## ------------------- CLEAN UP BEFORE EXIT -------------------------
+## ------------------------------------------------------------------
+
+function cleanup() {
+    local status=$?
+    if ( test "${status}" -gt 0 ) ; then
+        echo "Caught signal ${status} ... cleaning up & quitting."
+        # for file in `find "${OUTDIR}" -iname "*${HASH}*" | grep -v "_log.txt"`
+        for file in `find "${OUTDIR}" -iname "*${HASH}*"`
+        do
+            rm -f "${file}"
+        done
+    fi
+    exit 0
+}
+trap cleanup EXIT INT TERM
 
 ## ------------------------------------------------------------------
 ## -------- CHECKING THAT ALL REQUIRED FILES EXIST ------------------
@@ -701,9 +719,11 @@ fn_log "bowtie2     : `type -P bowtie2` (version: `bowtie2 --version | head -n1 
 fn_log "samtools    : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "deeptools   : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "macs2       : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "hicstuff    : `type -P hicstuff` (version: `hicstuff --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "juicer_tools: `type -P juicer_tools` (version: `juicer_tools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "cooler      : `type -P cooler` (version: `cooler --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+if test "${MODE}" == HiC ; then
+    fn_log "hicstuff    : `type -P hicstuff` (version: `hicstuff --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "juicer_tools: `type -P juicer_tools` (version: `juicer_tools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "cooler      : `type -P cooler` (version: `cooler --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fi
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 
 ## ------------------------------------------------------------------
@@ -713,14 +733,14 @@ echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 if test "${MODE}" == HiC ; then
 
     mkdir -p "${OUTDIR}"/tmp/"${HASH}"
-    cp "${GENOME_BASE}".fa "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta
-    cp "${GENOME_BASE}".1.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.1.bt2
-    cp "${GENOME_BASE}".2.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.2.bt2
-    cp "${GENOME_BASE}".3.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.3.bt2
-    cp "${GENOME_BASE}".4.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.4.bt2
-    cp "${GENOME_BASE}".rev.1.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.rev.1.bt2
-    cp "${GENOME_BASE}".rev.2.bt2 "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta.rev.2.bt2
-
+    cp "${GENOME_BASE}".fa "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta
+    cp "${GENOME_BASE}".1.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.1.bt2
+    cp "${GENOME_BASE}".2.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.2.bt2
+    cp "${GENOME_BASE}".3.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.3.bt2
+    cp "${GENOME_BASE}".4.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.4.bt2
+    cp "${GENOME_BASE}".rev.1.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.rev.1.bt2
+    cp "${GENOME_BASE}".rev.2.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.rev.2.bt2
+    
     fn_log "Processing sample reads with hicstuff" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff pipeline \
         --threads "${CPU}" \
@@ -730,16 +750,20 @@ if test "${MODE}" == HiC ; then
         "${HICSTUFFOPTIONS}" \
         --force \
         --matfmt cool \
-        --genome "${OUTDIR}"/tmp/"${HASH}"/${SAMPLE_BASE}.genome.fasta \
+        --genome "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta \
         "${SAMPLE_R1}" "${SAMPLE_R2}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Computing coverage track" 2>&1 | tee -a "${LOGFILE}"
-    samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".for.bam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".rev.bam
-    samtools sort -@ "${CPU}" -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}"_sorting "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam | samtools markdup -@ "${CPU}" -r -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}"_markdup - - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam
+    cmd="samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    cmd="samtools sort -@ "${CPU}" -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}"_sorting "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam | samtools markdup -@ "${CPU}" -r -T "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}"_markdup - - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     cov=`echo 1000000/$(samtools stats "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam | grep ^SN | grep "reads mapped:" | cut -f 3) | bc -l`
-    bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
-    bedGraphToBigWig "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}"
+    cmd="bedtools genomecov -bg -scale "${cov}" -ibam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    cmd="bedGraphToBigWig "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Binning cool file to ${FIRSTREZ} bp" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff rebin \
@@ -1255,8 +1279,8 @@ fi
 
 if test "${MODE}" == HiC ; then
     # rm
-    rm --force "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}"*bt2
-    rm --force "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".genome.fasta
+    rm --force "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}"*bt2
+    rm --force "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".hicstuff*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam 
@@ -1264,12 +1288,12 @@ if test "${MODE}" == HiC ; then
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
     # mv
     mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs "${SAMPLE_PAIRS_VALID}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs "${SAMPLE_PAIRS_VALID_IDX}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs "${SAMPLE_PAIRS_VALID_IDX_FILTERED}"
-    mv "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}"
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid.pairs "${SAMPLE_PAIRS_VALID}"
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs "${SAMPLE_PAIRS_VALID_IDX}"
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs "${SAMPLE_PAIRS_VALID_IDX_FILTERED}"
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}"
     mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}"
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}"
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}"
@@ -1321,7 +1345,7 @@ grep "\[EXEC\]" "${LOGFILE}" | sed 's,.*EXEC],,' | sed 's,| ,\\\n\t| ,g' 2>&1 | 
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "Pipeline achieved: `date`" 2>&1 | tee -a "${LOGFILE}"
 echo -e "Do check the log file \`${LOGFILE}\` to make sure everything went ok!"
-echo -e "You can re-run the commands by running \`./"${CMDFILE}"\`."
+echo -e "You can re-run the commands by running \`. "${CMDFILE}"\`."
 
 ## -- Remove color decorators from log file
 sed -i 's/\x1b\[[0-9;]*m//g' "${LOGFILE}"
@@ -1333,3 +1357,5 @@ rm --force "${TMPFILE}"
 if test `ls "${OUTDIR}"/*INPROGRESS 1> /dev/null 2>&1 ; echo $?` == 2 ; then
     find "${OUTDIR}" -type d -empty -delete
 fi
+
+exit 0
