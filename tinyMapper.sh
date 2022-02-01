@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.11.0
+VERSION=0.11.1
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -721,7 +721,9 @@ fn_log "deeptools   : `type -P deeptools` (version: `deeptools --version | head 
 fn_log "macs2       : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 if test "${MODE}" == HiC ; then
     fn_log "hicstuff    : `type -P hicstuff` (version: `hicstuff --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-    fn_log "juicer_tools: `type -P juicer_tools` (version: `juicer_tools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+    if ! test -z `command -v juicer_tools` ; then
+        fn_log "juicer_tools: `type -P juicer_tools` (version: `juicer_tools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+    fi
     fn_log "cooler      : `type -P cooler` (version: `cooler --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fi
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
@@ -1287,18 +1289,18 @@ if test "${MODE}" == HiC ; then
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam 
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
     # mv
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid.pairs "${SAMPLE_PAIRS_VALID}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs "${SAMPLE_PAIRS_VALID_IDX}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs "${SAMPLE_PAIRS_VALID_IDX_FILTERED}"
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}"
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}"
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}"
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}"
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distribution.pdf "${SAMPLE_PAIRS_DISTR}"
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_distance_law.pdf "${SAMPLE_PAIRS_LAW}"
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}" 2>/dev/null
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}" 2>/dev/null
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}" 2>/dev/null
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid.pairs "${SAMPLE_PAIRS_VALID}" 2>/dev/null
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs "${SAMPLE_PAIRS_VALID_IDX}" 2>/dev/null
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs "${SAMPLE_PAIRS_VALID_IDX_FILTERED}" 2>/dev/null
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}" 2>/dev/null
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}" 2>/dev/null
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}" 2>/dev/null
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}" 2>/dev/null
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distribution.pdf "${SAMPLE_PAIRS_DISTR}" 2>/dev/null
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_distance_law.pdf "${SAMPLE_PAIRS_LAW}" 2>/dev/null
 fi
 
 if test "${KEEPFILES}" == 1 ; then
