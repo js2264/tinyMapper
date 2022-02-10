@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.11.1
+VERSION=0.11.2
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -435,7 +435,7 @@ function cleanup() {
             rm -f "${file}"
         done
     fi
-    exit 0
+    exit 1
 }
 trap cleanup EXIT INT TERM
 
