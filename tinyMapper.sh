@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.11.3
+VERSION=0.11.4
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -501,7 +501,7 @@ if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
                 else
                     SAMPLE_R1=`find $SAMPLE_DIR -name $SAMPLE_BASE* | grep "_S[0-9]\{1,2\}_R1"`
                     SAMPLE_R2=`find $SAMPLE_DIR -name $SAMPLE_BASE* | grep "_S[0-9]\{1,2\}_R2"`
-                    if [[ -f "${SAMPLE_R1}" && -f "${SAMPLE_R2}" && "${SAMPLE_R1}" != *[[:space:]]* && "${SAMPLE_R2}" != *[[:space:]]* ]]
+                    if [[ -f "${SAMPLE_R1}" && -f "${SAMPLE_R2}" && "${SAMPLE_R1}" != *[[:space:]]* && "${SAMPLE_R2}" != *[[:space:]]* ]] ; then
                         fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
                         fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
                     else 
@@ -576,7 +576,7 @@ if test "${DO_INPUT}" == 0 ; then
                     else
                         INPUT_R1=`find $INPUT_DIR -name $INPUT_BASE* | grep "_S[0-9]\{1,2\}_R1"`
                         INPUT_R2=`find $INPUT_DIR -name $INPUT_BASE* | grep "_S[0-9]\{1,2\}_R2"`
-                        if [[ -f "${INPUT_R1}" && -f "${INPUT_R2}" && "${INPUT_R1}" != *[[:space:]]* && "${INPUT_R2}" != *[[:space:]]* ]]
+                        if [[ -f "${INPUT_R1}" && -f "${INPUT_R2}" && "${INPUT_R1}" != *[[:space:]]* && "${INPUT_R2}" != *[[:space:]]* ]]; then
                             fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
                             fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
                         else 
