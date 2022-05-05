@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.11.5
+VERSION=0.11.6
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -33,14 +33,14 @@ function usage() {
     echo -e "   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)"
     echo -e "                                    Default: '' (no specific options)"
     echo -e "   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)"
-    echo -e "                                    Default: '-f 2 -q 10' ('-f 2' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)"
+    echo -e "                                    Default: '-f 0x001 -f 0x002 -F 0x004 -F 0x0008 -q 10' ('-f 0x001 -f 0x002 -F 0x004 -F 0x0008' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)"
     echo -e "   -d|--duplicates                  Keep duplicate reads"
     echo -e ""
     echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--iterative --duplicates --filter --plot\`)"
-    echo -e "   -r|--resolutions <#>             Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')"
+    echo -e "   -r|--resolutions <#>             Resolution of final matrix file (default: '1000,2000,4000,8000,16000')"
     echo -e "   -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)"
     echo -e ""
-    echo -e "   -M|--MNaseSizes <MIN,MAX>        Minimum and maximum fragment size for MNase track (default: \`--MNaseSizes 70,250\`)"
+    echo -e "   -M|--MNaseSizes <MIN,MAX>        Minimum and maximum fragment size for MNase track (default: \`--MNaseSizes 130,200\`)"
     echo -e ""
     echo -e ""
     echo -e "---------------------- OUTPUT ARGUMENTS ----------------------------------------"
@@ -177,10 +177,10 @@ GENOME_=''
 SPIKEIN_=''
 OUTDIR='results'
 BOWTIEOPTIONS=''
-FILTEROPTIONS='-f 2 -q 10'
+FILTEROPTIONS='-f 0x001 -f 0x002 -F 0x004 -F 0x0008 -q 10'
 HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
 HICREZ='1000,2000,4000,8000,16000'
-MNASESIZES='70,250'
+MNASESIZES='130,200'
 RE=' DpnII,HinfI '
 BLACKLISTBEDFILE=''
 KEEPDUPLICATES=1
@@ -351,7 +351,7 @@ DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
 REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " -r " ; else echo " " ; fi`
 BLACKLIST_OPTIONS=`if test $(is_set "${BLACKLISTBEDFILE}") == 0 ; then echo " --blackListFileName ${BLACKLISTBEDFILE} " ; else echo " " ; fi`
-FIRSTREZ=`echo "${HICREZ}" | sed 's/,.*//' | sed 's,000$,kb,'`
+BASE_REZ=`echo "${HICREZ}" | sed 's/,.*//' | sed 's,000$,kb,'`
 MNASE_MINSIZE=`echo "${MNASESIZES}" | sed 's/,.*//'`
 MNASE_MAXSIZE=`echo "${MNASESIZES}" | sed 's/.*,//'`
 
@@ -784,14 +784,14 @@ if test "${MODE}" == HiC ; then
     cmd="bedGraphToBigWig "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
-    fn_log "Binning cool file to ${FIRSTREZ} bp" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "Binning cool file to ${BASE_REZ} bp" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff rebin \
-        --binning "${FIRSTREZ}" \
+        --binning "${BASE_REZ}" \
         --frags "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv \
         --chroms "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv \
         --force \
         "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".cool \
-        "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}""
+        "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating .mcool file" 2>&1 | tee -a "${LOGFILE}"
@@ -801,7 +801,7 @@ if test "${MODE}" == HiC ; then
         --balance \
         --balance-args \"--cis-only --min-nnz 3 --mad-max 7\" \
         --out "${SAMPLE_MCOOL}" \
-        "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}".cool"
+        "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     if ! test -z `command -v juicer_tools` ; then
@@ -1306,7 +1306,7 @@ if test "${MODE}" == HiC ; then
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam 
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
     # mv
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${FIRSTREZ}".cool "${SAMPLE_COOL}" 2>/dev/null
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool "${SAMPLE_COOL}" 2>/dev/null
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}" 2>/dev/null
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}" 2>/dev/null
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid.pairs "${SAMPLE_PAIRS_VALID}" 2>/dev/null
