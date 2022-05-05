@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.11.6
+VERSION=0.11.7
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -350,6 +350,7 @@ DO_INPUT=`is_set "${INPUT}"`
 DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
 REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " -r " ; else echo " " ; fi`
+IGNORE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " "${IGNORE_DUPLICATES}" " ; else echo " " ; fi`
 BLACKLIST_OPTIONS=`if test $(is_set "${BLACKLISTBEDFILE}") == 0 ; then echo " --blackListFileName ${BLACKLISTBEDFILE} " ; else echo " " ; fi`
 BASE_REZ=`echo "${HICREZ}" | sed 's/,.*//' | sed 's,000$,kb,'`
 MNASE_MINSIZE=`echo "${MNASESIZES}" | sed 's/,.*//'`
@@ -1044,7 +1045,7 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC && test "${MODE}" != R
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates"
+        "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     if test "${DO_INPUT}" == 0 ; then
@@ -1059,7 +1060,7 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC && test "${MODE}" != R
             --normalizeUsing CPM \
             --skipNonCoveredRegions \
             --extendReads \
-            --ignoreDuplicates"
+            "${IGNORE_DUPLICATES}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fn_log "Generating track for ${SAMPLE_BASE} divided by ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
@@ -1075,7 +1076,7 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC && test "${MODE}" != R
             "${BLACKLIST_OPTIONS}" \
             --binSize 5 \
             --skipNonCoveredRegions \
-            --ignoreDuplicates"
+            "${IGNORE_DUPLICATES}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
         fi
@@ -1094,7 +1095,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates"
+        "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating CPM track for ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
@@ -1107,7 +1108,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates"
+        "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating track for ${SAMPLE_BASE} divided by ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
@@ -1123,7 +1124,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         "${BLACKLIST_OPTIONS}" \
         --binSize 5 \
         --skipNonCoveredRegions \
-        --ignoreDuplicates"
+        "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating CPM track for ${SAMPLE_BASE} scaled by spikein-derived factor (ORI)" 2>&1 | tee -a "${LOGFILE}"
@@ -1137,7 +1138,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --scaleFactor "${SCALING_FACTOR}" \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates"
+        "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 fi
@@ -1154,7 +1155,7 @@ if test "${MODE}" == MNase ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates"
+        "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating nucleosome positioning track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
@@ -1167,7 +1168,7 @@ if test "${MODE}" == MNase ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates \
+        "${IGNORE_DUPLICATES}" \
         --smoothLength 10 \
         --MNase"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -1185,7 +1186,7 @@ if test "${MODE}" == RNA ; then
         "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
-        --ignoreDuplicates"
+        "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     fn_log "Generating forward track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
@@ -1198,7 +1199,7 @@ if test "${MODE}" == RNA ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates \
+        "${IGNORE_DUPLICATES}" \
         --filterRNAstrand forward"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
@@ -1212,7 +1213,7 @@ if test "${MODE}" == RNA ; then
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
         --extendReads \
-        --ignoreDuplicates \
+        "${IGNORE_DUPLICATES}" \
         --filterRNAstrand reverse"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
@@ -1236,18 +1237,31 @@ if test "${DO_PEAKS}" == 0 ; then
             --name "${SAMPLE_BASE}_genome-${GENOME}_${HASH}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
-    fi 
+    else
+    
+        if test "${DO_CALIBRATION}" == 1 ; then
 
-    if test "${DO_INPUT}" == 0 ; then
+            cmd="macs2 callpeak \
+                -t "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
+                -c "${INPUT_ALIGNED_GENOME_FILTERED}" \
+                --format BAMPE \
+                --gsize 13000000 \
+                --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
+                --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}""
+            fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
-        cmd="macs2 callpeak \
-            -t "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
-            -c "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
-            --format BAMPE \
-            --gsize 13000000 \
-            --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
-            --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}""
-        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+        else
+
+            cmd="macs2 callpeak \
+                -t "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
+                -c "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
+                --format BAMPE \
+                --gsize 13000000 \
+                --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
+                --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}""
+            fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+        fi 
 
     fi 
 
