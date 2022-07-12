@@ -17,6 +17,4 @@ dependencies:
   - java-jdk
   - ucsc-bedGraphToBigWig
   - numpydoc
-  - pip
-  - pip:
-    - git+https://github.com/koszullab/hicstuff.git@94c3014fbc69f1cea897d8066d503301e41bf774
+  - hicstuff
