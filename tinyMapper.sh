@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.11.7
+VERSION=0.11.8
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -36,7 +36,7 @@ function usage() {
     echo -e "                                    Default: '-f 0x001 -f 0x002 -F 0x004 -F 0x0008 -q 10' ('-f 0x001 -f 0x002 -F 0x004 -F 0x0008' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)"
     echo -e "   -d|--duplicates                  Keep duplicate reads"
     echo -e ""
-    echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--iterative --duplicates --filter --plot\`)"
+    echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--mapping iterative --duplicates --filter --plot --no-cleanup\`)"
     echo -e "   -r|--resolutions <#>             Resolution of final matrix file (default: '1000,2000,4000,8000,16000')"
     echo -e "   -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)"
     echo -e ""
@@ -795,6 +795,14 @@ if test "${MODE}" == HiC ; then
         "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
+    fn_log "Filtering out mitochondrial chromosome" 2>&1 | tee -a "${LOGFILE}"
+    cmd="grep -i -v 'Mito\|chrM\|MT' "${GENOME_SIZES}" > "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv_filtered"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    cmd="cooler dump --join "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool | cooler load --format bg2 "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv_filtered:1000 - out.cool"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    cmd="mv out.cool "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
     fn_log "Generating .mcool file" 2>&1 | tee -a "${LOGFILE}"
     cmd="cooler zoomify \
         --nproc "${CPU}" \
@@ -1316,6 +1324,7 @@ if test "${MODE}" == HiC ; then
     rm --force "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".hicstuff*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv
+    rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv_filtered
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam 
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam 
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
