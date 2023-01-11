@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.11.9
+VERSION=0.11.10
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -176,7 +176,7 @@ INPUT=''
 GENOME_=''
 SPIKEIN_=''
 OUTDIR='results'
-BOWTIEOPTIONS=''
+BOWTIEOPTIONS='--maxins 1000'
 FILTEROPTIONS='-f 0x001 -f 0x002 -F 0x004 -F 0x0008 -q 10'
 HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
 HICREZ='1000,2000,4000,8000,16000'
@@ -866,7 +866,6 @@ if test "${DO_CALIBRATION}" == 0 ; then
         -x "${SPIKEIN_BASE}" \
         -1 "${SAMPLE_R1}" \
         -2 "${SAMPLE_R2}" \
-        --maxins 1000 \
         --un-conc-gz "${SAMPLE_NON_ALIGNED_CALIBRATION}".gz \
         > "${SAMPLE_ALIGNED_CALIBRATION}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -877,7 +876,6 @@ if test "${DO_CALIBRATION}" == 0 ; then
         -x "${GENOME_BASE}" \
         -1 "${SAMPLE_NON_ALIGNED_CALIBRATION}".1.gz \
         -2 "${SAMPLE_NON_ALIGNED_CALIBRATION}".2.gz \
-        --maxins 1000 \
         > "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
@@ -887,7 +885,6 @@ if test "${DO_CALIBRATION}" == 0 ; then
         -x "${SPIKEIN_BASE}" \
         -1 "${SAMPLE_NON_ALIGNED_GENOME}".1.gz \
         -2 "${SAMPLE_NON_ALIGNED_GENOME}".2.gz \
-        --maxins 1000 \
         > "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 fi
@@ -899,7 +896,6 @@ if test "${DO_INPUT}" == 0 ; then
         -x "${GENOME_BASE}" \
         -1 "${INPUT_R1}" \
         -2 "${INPUT_R2}" \
-        --maxins 1000 \
         --un-conc-gz "${INPUT_NON_ALIGNED_GENOME}".gz \
         > "${INPUT_ALIGNED_GENOME}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -911,7 +907,6 @@ if test "${DO_INPUT}" == 0 ; then
             -x "${SPIKEIN_BASE}" \
             -1 "${INPUT_R1}" \
             -2 "${INPUT_R2}" \
-            --maxins 1000 \
             --un-conc-gz "${INPUT_NON_ALIGNED_CALIBRATION}".gz \
             > "${INPUT_ALIGNED_CALIBRATION}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -922,7 +917,6 @@ if test "${DO_INPUT}" == 0 ; then
             -x "${GENOME_BASE}" \
             -1 "${INPUT_NON_ALIGNED_CALIBRATION}".1.gz \
             -2 "${INPUT_NON_ALIGNED_CALIBRATION}".2.gz \
-            --maxins 1000 \
             > "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
@@ -932,7 +926,6 @@ if test "${DO_INPUT}" == 0 ; then
             -x "${SPIKEIN_BASE}" \
             -1 "${INPUT_NON_ALIGNED_GENOME}".1.gz \
             -2 "${INPUT_NON_ALIGNED_GENOME}".2.gz \
-            --maxins 1000 \
             > "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     fi
@@ -948,7 +941,7 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
     fn_log "Filtering sample bam file of reads mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${SAMPLE_ALIGNED_GENOME}" - \
         | samtools sort ${SAMTOOLS_OPTIONS} -T "${SAMPLE_ALIGNED_GENOME}"_sorting - \
-        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${SAMPLE_ALIGNED_GENOME}"_markdup - - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} - - \
         | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
         | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${SAMPLE_ALIGNED_GENOME}"_sorting2 \
         -o "${SAMPLE_ALIGNED_GENOME_FILTERED}""
@@ -961,7 +954,7 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
         fn_log "Filtering input bam file of reads mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
         cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${INPUT_ALIGNED_GENOME}" - \
             | samtools sort ${SAMTOOLS_OPTIONS} -T "${INPUT_ALIGNED_GENOME}"_sorting - \
-            | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${INPUT_ALIGNED_GENOME}"_markdup - - \
+            | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} - - \
             | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
             | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${INPUT_ALIGNED_GENOME}"_sorting2 \
             -o "${INPUT_ALIGNED_GENOME_FILTERED}""
@@ -978,7 +971,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
     fn_log "Filtering sample bam file of reads unmapped on spikein genome and mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}" - \
         | samtools sort ${SAMTOOLS_OPTIONS} -T "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting - \
-        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_markdup - - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} - - \
         | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
         | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting2 \
         -o "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}""
@@ -989,7 +982,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
     fn_log "Filtering sample bam file of reads unmapped on reference genome and mapped to spikein genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}" - \
         | samtools sort ${SAMTOOLS_OPTIONS} -T "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting - \
-        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_markdup - - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} - - \
         | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
         | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting2 \
         -o "${SAMPLE_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}""
@@ -1000,7 +993,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
     fn_log "Filtering input bam file of reads unmapped on spikein genome and mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}" - \
         | samtools sort ${SAMTOOLS_OPTIONS} -T "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting - \
-        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_markdup - - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} - - \
         | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
         | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME}"_sorting2 \
         -o "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}""
@@ -1011,7 +1004,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
     fn_log "Filtering input bam file of reads unmapped on reference genome and mapped to spikein genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}" - \
         | samtools sort ${SAMTOOLS_OPTIONS} -T "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting - \
-        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} -T "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_markdup - - \
+        | samtools markdup ${SAMTOOLS_OPTIONS} ${REMOVE_DUPLICATES} - - \
         | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
         | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION}"_sorting2 \
         -o "${INPUT_NON_ALIGNED_GENOME_ALIGNED_CALIBRATION_FILTERED}""
