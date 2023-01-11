@@ -837,7 +837,7 @@ if test "${MODE}" == HiC ; then
 
     if ! test -z `command -v juicer_tools` ; then
         fn_log "Generating .hic file" 2>&1 | tee -a "${LOGFILE}"
-        cmd="grep -v '^#' "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1"
+        cmd="grep -v '^#' "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs | sort -k2,2d -k4,4d | sed -e '1 i\## pairs format v1.0\n#columns: readID chr1 position1 chr2 position2 strand1 strand2' > tmp1"
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
         cmd="sed '1d' "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv | cut -f1,2 > tmp2"
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
