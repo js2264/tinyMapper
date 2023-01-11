@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.11.8
+VERSION=0.11.9
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -201,7 +201,7 @@ CPU=8
 # KEEPFILES=0
 
 # MODE=HiC
-# SAMPLE=test/testHiC
+# SAMPLE=tests/testHiC
 # GENOME_=~/genomes/W303/W303
 # HICREZ='1000,2000,4000,8000'
 # KEEPFILES=0
@@ -447,7 +447,7 @@ trap cleanup EXIT INT TERM
 
 # Check that mode is amongst possible modes (ChIP, MNase, ATAC, RNA, HiC)
 if test "${MODE}" != "ChIP" && test "${MODE}" != "MNase" && test "${MODE}" != "ATAC" && test "${MODE}" != "RNA" && test "${MODE}" != "HiC" ; then
-    fn_error "Mode has to be one of the following: ChIP MNase ATAC RNA HiC." 2>&1 | tee -a "${LOGFILE}"
+    fn_error "Mode has to be one of the following: `ChIP` `MNase` `ATAC` `RNA` `HiC`." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     rm --force "${LOGFILE}"
     exit 1
@@ -472,6 +472,7 @@ fi
 # Check that sample files exist. Try different patterns: 
 #       "${SAMPLE}_R1.fq.gz" [DEFAULT]
 #       "${SAMPLE}_R1.fastq.gz"
+#       "${SAMPLE}_nvq_R1.fq.gz"
 #       "${SAMPLE}_nxq_R1.fq.gz"
 #       "${SAMPLE}.end1.fq.gz"
 #       "${SAMPLE}.end1.gz"
@@ -489,6 +490,12 @@ if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
             fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
             fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
         else
+            SAMPLE_R1="${SAMPLE}_nvq_R1.fq.gz"
+            SAMPLE_R2="${SAMPLE}_nvq_R2.fq.gz"
+            if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
+                fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
+                fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+            else
             SAMPLE_R1="${SAMPLE}.end1.fq.gz"
             SAMPLE_R2="${SAMPLE}.end2.fq.gz"
             if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
@@ -517,6 +524,7 @@ if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
             fi
         fi
     fi
+fi
 fi
 
 # Check if a genome is provided
@@ -547,6 +555,7 @@ fi
 # If providing input, check that the input files exist. Try different patterns: 
 #       "${INPUT}_R1.fq.gz" [DEFAULT]
 #       "${INPUT}_R1.fastq.gz"
+#       "${INPUT}_nvq_R1.fq.gz"
 #       "${INPUT}_nxq_R1.fq.gz"
 #       "${INPUT}.end1.gz"
 #       "${INPUT}_S[0-9]{1,2}_R1*.gz"
@@ -564,6 +573,12 @@ if test "${DO_INPUT}" == 0 ; then
                 fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
                 fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
             else
+                INPUT_R1="${INPUT}_nvq_R1.fq.gz"
+                INPUT_R2="${INPUT}_nvq_R2.fq.gz"
+                if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
+                    fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
+                    fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                else
                 INPUT_R1="${INPUT}.end1.fq.gz"
                 INPUT_R2="${INPUT}.end2.fq.gz"
                 if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
@@ -593,6 +608,7 @@ if test "${DO_INPUT}" == 0 ; then
             fi
         fi
     fi
+fi
 fi
 
 # If providing calibration, check that the calibration genome exists
