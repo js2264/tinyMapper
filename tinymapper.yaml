@@ -1,4 +1,3 @@
-name: tinymapper
 channels:
   - bioconda
   - conda-forge
