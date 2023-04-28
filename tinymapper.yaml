@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - python
+  - pandas==1.5.3
   - matplotlib
   - samtools
   - bowtie2
