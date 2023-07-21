@@ -1149,6 +1149,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --numberOfProcessors "${CPU}" \
         "${BLACKLIST_OPTIONS}" \
         --binSize 5 \
+        --extendReads \
         --skipNonCoveredRegions \
         "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
