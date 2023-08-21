@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.12.2
+VERSION=0.12.4
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -33,7 +33,7 @@ function usage() {
     echo -e "   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)"
     echo -e "                                    Default: '' (no specific options)"
     echo -e "   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)"
-    echo -e "                                    Default: '-f 0x001 -f 0x002 -F 0x004 -F 0x0008 -q 10' ('-f 0x001 -f 0x002 -F 0x004 -F 0x0008' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)"
+    echo -e "                                    Default: '-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10' ('-f 0x001 -f 0x002 -F 0x004 -F 0x008' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)"
     echo -e "   -d|--duplicates                  Keep duplicate reads"
     echo -e ""
     echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--mapping iterative --duplicates --filter --plot --no-cleanup\`)"
@@ -87,6 +87,7 @@ function usage_extended() {
     echo -e "---------------------- REQUIRED UTILITIES --------------------------------------"
     echo -e ""
     echo -e "   bowtie2"
+    echo -e "   STAR"
     echo -e "   samtools"
     echo -e "   deeptools"
     echo -e "   macs2 (for ChIP/ATAC)"
@@ -179,7 +180,7 @@ GENOME_=''
 SPIKEIN_=''
 OUTDIR='results'
 BOWTIEOPTIONS='--maxins 1000'
-FILTEROPTIONS='-f 0x001 -f 0x002 -F 0x004 -F 0x0008 -q 10'
+FILTEROPTIONS='-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10'
 HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
 HICREZ='1000,2000,4000,8000,16000'
 MNASESIZES='130,200'
@@ -191,6 +192,15 @@ KEEPFILES=1
 CPU=8
 
 # Custom values for test
+
+# MODE=RNA
+# SAMPLE=tests/testRNA
+# GENOME_=~/genomes/R64-1-1/R64-1-1
+# OUTDIR=results
+# FILTEROPTIONS='-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10'
+# KEEPDUPLICATES=0
+# CPU=16
+# KEEPFILES=0
 
 # MODE=ChIP
 # SAMPLE=sftpcampus:tmp/HB44
@@ -630,12 +640,22 @@ if test "${DO_CALIBRATION}" == 0 ; then
 fi
 
 # If provided reference genome is not indexed abort
-if test ! -f "${GENOME_BASE}".1.bt2 || test ! -f "${GENOME_BASE}".2.bt2 || test ! -f "${GENOME_BASE}".3.bt2 || test ! -f "${GENOME_BASE}".4.bt2 || test ! -f "${GENOME_BASE}".rev.1.bt2 || test ! -f "${GENOME_BASE}".rev.2.bt2 ; then
-    fn_error "Genome bowtie2 index files are missing. Please run the following command first:" 2>&1 | tee -a "${LOGFILE}"
-    echo -e "bowtie2-build ${GENOME_FA} ${GENOME_BASE}" 2>&1 | tee -a "${LOGFILE}"
-    fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
-    rm --force "${LOGFILE}"
-    exit 1
+if test "${MODE}" == RNA ; then 
+    if test ! -d "${GENOME_BASE}"/STAR/ ; then
+        fn_error "Genome STAR index folder is missing. Please run the following command first:" 2>&1 | tee -a "${LOGFILE}"
+        echo -e "STAR --runMode genomeGenerate --runThreadN ${CPU} --genomeFastaFiles ${GENOME_BASE}.fa --genomeDir ${GENOME_BASE}/STAR/ <[ --sjdbGTFfile ... --sjdbOverhang ... ]>" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
+    fi
+else
+    if test ! -f "${GENOME_BASE}".1.bt2 || test ! -f "${GENOME_BASE}".2.bt2 || test ! -f "${GENOME_BASE}".3.bt2 || test ! -f "${GENOME_BASE}".4.bt2 || test ! -f "${GENOME_BASE}".rev.1.bt2 || test ! -f "${GENOME_BASE}".rev.2.bt2 ; then
+        fn_error "Genome bowtie2 index files are missing. Please run the following command first:" 2>&1 | tee -a "${LOGFILE}"
+        echo -e "bowtie2-build ${GENOME_FA} ${GENOME_BASE}" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
+    fi
 fi
 
 # If provided calibration genome is not indexed abort
@@ -693,6 +713,17 @@ if test "${MODE}" == HiC ; then
     if test -z `command -v "${util}"` ; then
         fn_warning "${util} does not seem to be installed or loaded." 2>&1 | tee -a "${LOGFILE}"
         fn_warning ".hic matrix file will not be generated." 2>&1 | tee -a "${LOGFILE}"
+    fi
+fi
+
+if test "${MODE}" == RNA ; then
+    util=STAR
+    if test -z `command -v "${util}"` ; then
+        fn_error "${util} does not seem to be installed or loaded. Most likely, it can be installed as follows:" 2>&1 | tee -a "${LOGFILE}"
+        echo -e "conda install -c bioconda ${util}" 2>&1 | tee -a "${LOGFILE}"
+        fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
     fi
 fi
 
@@ -765,6 +796,9 @@ fn_log "CPU         : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "OUTDIR      : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "bowtie2     : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+if test "${MODE}" == RNA ; then
+    fn_log "STAR        : `type -P STAR` (version: `STAR --version`)" 2>&1 | tee -a "${LOGFILE}"
+fi
 fn_log "samtools    : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "deeptools   : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "macs2       : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
@@ -857,16 +891,33 @@ if test "${MODE}" == HiC ; then
 
 else 
 
-fn_log "Mapping sample reads to reference genome" 2>&1 | tee -a "${LOGFILE}"
-cmd="bowtie2 ${BOWTIEOPTIONS} \
-    --threads "${CPU}" \
-    -x "${GENOME_BASE}" \
-    -1 "${SAMPLE_R1}" \
-    -2 "${SAMPLE_R2}" \
-    --maxins 1000 \
-    --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
-    > "${SAMPLE_ALIGNED_GENOME}"" 
-fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+if test "${MODE}" == RNA ; then
+    fn_log "Mapping sample reads to reference genome with STAR" 2>&1 | tee -a "${LOGFILE}"
+
+    SAMPLE_ALIGNED_GENOME="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".bam
+    cmd="STAR \
+        --genomeDir "${GENOME_BASE}"/STAR/ \
+        --readFilesCommand zcat \
+        --runThreadN "${CPU}" \
+        --readFilesIn "${SAMPLE_R1}" "${SAMPLE_R2}" \
+        --outFileNamePrefix "${SAMPLE_ALIGNED_GENOME}". \
+        --outSAMtype BAM Unsorted \
+        --outSAMunmapped None \
+        --outSAMattributes Standard"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    mv "${SAMPLE_ALIGNED_GENOME}".Aligned.out.bam "${SAMPLE_ALIGNED_GENOME}"
+else 
+    fn_log "Mapping sample reads to reference genome with bowtie2" 2>&1 | tee -a "${LOGFILE}"
+    cmd="bowtie2 ${BOWTIEOPTIONS} \
+        --threads "${CPU}" \
+        -x "${GENOME_BASE}" \
+        -1 "${SAMPLE_R1}" \
+        -2 "${SAMPLE_R2}" \
+        --maxins 1000 \
+        --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
+        > "${SAMPLE_ALIGNED_GENOME}"" 
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+fi
 
 if test "${DO_CALIBRATION}" == 0 ; then
     fn_log "Mapping sample reads to spikein genome" 2>&1 | tee -a "${LOGFILE}"
@@ -1102,10 +1153,11 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC && test "${MODE}" != R
             "${BLACKLIST_OPTIONS}" \
             --binSize 5 \
             --skipNonCoveredRegions \
+            --extendReads \
             "${IGNORE_DUPLICATES}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
-        fi
+    fi
 
 fi
 
