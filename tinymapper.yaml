@@ -1,20 +1,13 @@
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - python
-  - pandas==1.5.3
-  - matplotlib
-  - samtools
-  - bowtie2
   - bedtools
   - deeptools
   - macs2
-  - cooler
   - mawk
   - tree
   - java-jdk
   - ucsc-bedGraphToBigWig
-  - numpydoc
-  - hicstuff
+  - hicstuff >= 3.2.1

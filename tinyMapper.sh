@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.12.4
+VERSION=0.12.5
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -33,11 +33,14 @@ function usage() {
     echo -e "   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)"
     echo -e "                                    Default: '' (no specific options)"
     echo -e "   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)"
-    echo -e "                                    Default: '-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10' ('-f 0x001 -f 0x002 -F 0x004 -F 0x008' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)"
+    echo -e "                                    Default: '-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10'"
+    echo -e "                                    ('-f 0x001 -f 0x002 -F 0x004 -F 0x008' to only keep concordant mapped and paired reads)"
+    echo -e "                                    ('-q 10' to filter out reads with mapping quality score < 10)"
     echo -e "   -d|--duplicates                  Keep duplicate reads"
     echo -e ""
     echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--mapping iterative --duplicates --filter --plot --no-cleanup\`)"
-    echo -e "   -r|--resolutions <#>             Resolution of final matrix file (default: '1000,2000,4000,8000,16000')"
+    echo -e "   -b|--binning <#>                 Generate multi-resolution contact matrix at a given minimal resolution and 4 increasing resolutions"
+    echo -e "                                    Default: '--binning 1000'"
     echo -e "   -b|--balance <BALANCE>           Balancing options for \`cooler zoomify\` (between single quotes)"
     echo -e "                                    Default: '--cis-only --min-nnz 3 --mad-max 7'"
     echo -e "   -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)"
@@ -80,7 +83,7 @@ function usage_extended() {
     echo -e ""
     echo -e "   HiC mode (through hicstuff):"
     echo -e ""
-    echo -e "      ./tinyMapper.sh -m HiC -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results --resolutions 1000,2000,4000 --restriction 'DpnII,HinfI'"
+    echo -e "      ./tinyMapper.sh -m HiC -s ~/CH266 -g ~/genomes/W303/W303 -o ~/results --binning 1000 --restriction 'DpnII,HinfI'"
     echo -e ""
     echo -e "================================================================================"
     echo -e ""
@@ -182,7 +185,7 @@ OUTDIR='results'
 BOWTIEOPTIONS='--maxins 1000'
 FILTEROPTIONS='-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10'
 HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
-HICREZ='1000,2000,4000,8000,16000'
+HICREZ='1000'
 MNASESIZES='130,200'
 RE=' DpnII,HinfI '
 BALANCEOPTIONS='--cis-only --min-nnz 3 --mad-max 7'
@@ -287,7 +290,7 @@ do
         shift 
         shift 
         ;;
-        -r|--resolutions)
+        -b|--binning)
         HICREZ=${2}
         shift 
         shift 
@@ -785,7 +788,7 @@ fi
 if test "${MODE}" == HiC ; then
     fn_log "hicstuff opt.    : ${HICSTUFFOPTIONS}" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Restriction enz. : ${RE}" 2>&1 | tee -a "${LOGFILE}"
-    fn_log "Resolutions      : ${HICREZ}" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "Binning          : ${HICREZ}" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Balancing opt.   : ${BALANCEOPTIONS}" 2>&1 | tee -a "${LOGFILE}"
 else 
     fn_log "Keep dups.  : `if test ${KEEPDUPLICATES} == 0 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
@@ -835,7 +838,8 @@ if test "${MODE}" == HiC ; then
         --prefix "${SAMPLE_BASE}"^"${HASH}" \
         "${HICSTUFFOPTIONS}" \
         --force \
-        --matfmt cool \
+        --binning "${HICREZ}" \
+        --exclude "Mito,chrM,MT" \
         --genome "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta \
         "${SAMPLE_R1}" "${SAMPLE_R2}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -849,24 +853,6 @@ if test "${MODE}" == HiC ; then
     cmd="bedtools genomecov -bg -scale "${COV}" -ibam "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam | bedtools sort -i - > "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     cmd="bedGraphToBigWig "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg "${GENOME_SIZES}" "${SAMPLE_RAW_TRACK}""
-    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
-
-    fn_log "Filtering out mitochondrial chromosome" 2>&1 | tee -a "${LOGFILE}"
-    cmd="grep -i -v 'Mito\|chrM\|MT' "${GENOME_SIZES}" > "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv_filtered"
-    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
-
-    fn_log "Parsing pairs into a .cool file" 2>&1 | tee -a "${LOGFILE}"
-    cmd="cooler cload pairs -c1 2 -p1 3 -c2 4 -p2 5 "${GENOME_SIZES}":"${BASE_REZ}" "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool"
-    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
-
-    fn_log "Generating .mcool file" 2>&1 | tee -a "${LOGFILE}"
-    cmd="cooler zoomify \
-        --nproc "${CPU}" \
-        --resolutions "${HICREZ}" \
-        --balance \
-        --balance-args \""${BALANCEOPTIONS}"\" \
-        --out "${SAMPLE_MCOOL}" \
-        "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     if ! test -z `command -v juicer_tools` ; then
