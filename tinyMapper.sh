@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.13.1
+VERSION=0.13.2
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -899,7 +899,6 @@ else
         -x "${GENOME_BASE}" \
         -1 "${SAMPLE_R1}" \
         -2 "${SAMPLE_R2}" \
-        --maxins 1000 \
         --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
         > "${SAMPLE_ALIGNED_GENOME}"" 
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
