@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.13.3
+VERSION=0.13.4
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1437,10 +1437,10 @@ if test "${MODE}" == HiC ; then
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs "${SAMPLE_PAIRS_VALID_IDX}" 2>/dev/null
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs "${SAMPLE_PAIRS_VALID_IDX_FILTERED}" 2>/dev/null
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}" 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs "${SAMPLE_PAIRS_VALID}" 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs "${SAMPLE_PAIRS_VALID_IDX}" 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs "${SAMPLE_PAIRS_VALID_IDX_FILTERED}" 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}" 2>/dev/null
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs.gz "${SAMPLE_PAIRS_VALID}".gz 2>/dev/null
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs.gz "${SAMPLE_PAIRS_VALID_IDX}".gz 2>/dev/null
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_FILTERED}".gz 2>/dev/null
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}".gz 2>/dev/null
     mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}" 2>/dev/null
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}" 2>/dev/null
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}" 2>/dev/null
