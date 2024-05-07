@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.13.4
+VERSION=0.13.5
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1433,14 +1433,13 @@ if test "${MODE}" == HiC ; then
     mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".mcool "${SAMPLE_MCOOL}" 2>/dev/null
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}" 2>/dev/null
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}" 2>/dev/null
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid.pairs "${SAMPLE_PAIRS_VALID}" 2>/dev/null
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs "${SAMPLE_PAIRS_VALID_IDX}" 2>/dev/null
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs "${SAMPLE_PAIRS_VALID_IDX_FILTERED}" 2>/dev/null
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}" 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid.pairs.gz "${SAMPLE_PAIRS_VALID}".gz 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs.gz "${SAMPLE_PAIRS_VALID_IDX}".gz 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_FILTERED}".gz 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}".gz 2>/dev/null
+    if [[ "${HICSTUFFOPTIONS}" =~ --duplicates || "${HICSTUFFOPTIONS}" =~ -d ]] ; then 
+        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}".gz 2>/dev/null
+    elif [[ "${HICSTUFFOPTIONS}" =~ --filter || "${HICSTUFFOPTIONS}" =~ -f ]] ; then 
+        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_FILTERED}".gz 2>/dev/null
+    else 
+        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs.gz "${SAMPLE_PAIRS_VALID_IDX}".gz 2>/dev/null
+    fi
     mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}" 2>/dev/null
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}" 2>/dev/null
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}" 2>/dev/null
@@ -1467,6 +1466,10 @@ if test "${KEEPFILES}" == 1 ; then
     rm --force "${OUTDIR}"/fastq/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^"${HASH}"*
     rm --force "${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".cool
+    rm --force "${SAMPLE_ALIGNED_GENOME_FWD}"
+    rm --force "${SAMPLE_ALIGNED_GENOME_REV}"
+    rm --force "${SAMPLE_ALIGNED_GENOME_REV}"
+    rm --recursive --force "${OUTDIR}"/tmp/
 fi
 
 ## ------------------------------------------------------------------
