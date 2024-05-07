@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.13.2
+VERSION=0.13.3
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -20,7 +20,7 @@ function usage() {
     echo -e ""
     echo -e "---------------------- REQUIRED ARGUMENTS ---------------------------------------"
     echo -e ""
-    echo -e "   -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC)"
+    echo -e "   -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC, shotgun)"
     echo -e "   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fq.gz\` files, use \`--sample ~/reads/JS001\`)"
     echo -e "   -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)"
     echo -e ""
@@ -466,12 +466,22 @@ trap cleanup EXIT INT TERM
 ## -------- CHECKING THAT ALL REQUIRED FILES EXIST ------------------
 ## ------------------------------------------------------------------
 
-# Check that mode is amongst possible modes (ChIP, MNase, ATAC, RNA, HiC)
-if test "${MODE}" != "ChIP" && test "${MODE}" != "MNase" && test "${MODE}" != "ATAC" && test "${MODE}" != "RNA" && test "${MODE}" != "HiC" ; then
+# Check that mode is amongst possible modes (shotgun, ChIP, MNase, ATAC, RNA, HiC)
+if test "${MODE}" != "shotgun" && test "${MODE}" != "ChIP" && test "${MODE}" != "MNase" && test "${MODE}" != "ATAC" && test "${MODE}" != "RNA" && test "${MODE}" != "HiC" ; then
     fn_error "Mode has to be one of the following: `ChIP` `MNase` `ATAC` `RNA` `HiC`." 2>&1 | tee -a "${LOGFILE}"
     fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
     rm --force "${LOGFILE}"
     exit 1
+fi
+
+# If mode is shotgun, override BOWTIEOPTIONS
+if test "${MODE}" == 'shotgun'; then
+    BOWTIEOPTIONS='--sensitive-local'
+    fn_warning "Shotgun mode enforces the following bowtie mapping options:" 2>&1 | tee -a "${LOGFILE}"
+    fn_warning "  \`${BOWTIEOPTIONS}\`" 2>&1 | tee -a "${LOGFILE}"
+    FILTEROPTIONS='-F 0x004 -q 10'
+    fn_warning "Shotgun mode enforces the following bowtie filtering options:" 2>&1 | tee -a "${LOGFILE}"
+    fn_warning "  \`${FILTEROPTIONS}\`" 2>&1 | tee -a "${LOGFILE}"
 fi
 
 # Abort if trying to calibrate without input
@@ -892,6 +902,15 @@ if test "${MODE}" == RNA ; then
         --outSAMattributes Standard"
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
     mv "${SAMPLE_ALIGNED_GENOME}".Aligned.out.bam "${SAMPLE_ALIGNED_GENOME}"
+elif test "${MODE}" == shotgun ; then
+    fn_log "Mapping sample reads to reference genome with bowtie2 in single-end mode" 2>&1 | tee -a "${LOGFILE}"
+    cmd="bowtie2 ${BOWTIEOPTIONS} \
+        --threads "${CPU}" \
+        -x "${GENOME_BASE}" \
+        -U "${SAMPLE_R1}","${SAMPLE_R2}" \
+        --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
+        > "${SAMPLE_ALIGNED_GENOME}"" 
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 else 
     fn_log "Mapping sample reads to reference genome with bowtie2" 2>&1 | tee -a "${LOGFILE}"
     cmd="bowtie2 ${BOWTIEOPTIONS} \
@@ -981,7 +1000,16 @@ fi
 ## ------------------- FILTERING & INDEXING -------------------------
 ## ------------------------------------------------------------------
 
-if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
+if test "${MODE}" == shotgun ; then
+    fn_log "Filtering sample bam file of reads mapped to reference genome (single-end mode)" 2>&1 | tee -a "${LOGFILE}"
+    cmd="samtools sort ${SAMTOOLS_OPTIONS} -T "${SAMPLE_ALIGNED_GENOME}"_sorting "${SAMPLE_ALIGNED_GENOME}" \
+        | samtools view ${SAMTOOLS_OPTIONS} ${FILTEROPTIONS} -1 -b - \
+        | samtools sort ${SAMTOOLS_OPTIONS} -l 9 -T "${SAMPLE_ALIGNED_GENOME}"_sorting2 \
+        -o "${SAMPLE_ALIGNED_GENOME_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}"
+    cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+elif test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC ; then
 
     fn_log "Filtering sample bam file of reads mapped to reference genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools fixmate ${SAMTOOLS_OPTIONS} -m "${SAMPLE_ALIGNED_GENOME}" - \
@@ -1095,7 +1123,23 @@ fi
 ## ------------------- TRACKS ---------------------------------------
 ## ------------------------------------------------------------------
 
-if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != HiC && test "${MODE}" != RNA ; then
+if test "${MODE}" == shotgun ; then
+
+    fn_log "Generating CPM track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
+    cmd="bamCoverage \
+        --bam "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
+        --outFileName "${SAMPLE_RAW_TRACK}" \
+        --binSize 1 \
+        --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
+        --normalizeUsing CPM \
+        --skipNonCoveredRegions \
+        "${IGNORE_DUPLICATES}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+fi
+
+if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != shotgun && test "${MODE}" != HiC && test "${MODE}" != RNA ; then
 
     fn_log "Generating CPM track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
     cmd="bamCoverage \
