@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.14.0
+VERSION=0.14.1
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1469,7 +1469,7 @@ if test "${KEEPFILES}" == 1 ; then
     rm --force "${SAMPLE_ALIGNED_GENOME_FWD}"
     rm --force "${SAMPLE_ALIGNED_GENOME_REV}"
     rm --force "${SAMPLE_ALIGNED_GENOME_REV}"
-    rm --recursive --force "${OUTDIR}"/tmp/
+    # rm --recursive --force "${OUTDIR}"/tmp/"${HASH}"/
 fi
 
 ## ------------------------------------------------------------------
