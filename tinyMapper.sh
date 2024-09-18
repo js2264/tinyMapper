@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.14.1
+VERSION=0.14.2
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -413,6 +413,7 @@ if test "${MODE}" == MNase ; then
     SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".bam
     SAMPLE_READSIZE_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}"."${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}".CPM.bw
     SAMPLE_NUCPOS_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".nucpos.CPM.bw
+    SAMPLE_NUCCOV_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".nuccov.CPM.bw
 fi
 
 if test "${MODE}" == RNA ; then 
@@ -1279,6 +1280,20 @@ if test "${MODE}" == MNase ; then
         "${IGNORE_DUPLICATES}" \
         --smoothLength 10 \
         --MNase"
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+    fn_log "Generating nucleosome coverage track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
+    cmd="bamCoverage \
+        --bam "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}" \
+        --outFileName "${SAMPLE_NUCCOV_TRACK}" \
+        --binSize 1 \
+        --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
+        --normalizeUsing CPM \
+        --skipNonCoveredRegions \
+        --extendReads 40 \
+        --centerReads \
+        "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
 fi
