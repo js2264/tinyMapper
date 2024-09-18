@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.14.2
+VERSION=0.14.3
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -1291,7 +1291,7 @@ if test "${MODE}" == MNase ; then
         "${BLACKLIST_OPTIONS}" \
         --normalizeUsing CPM \
         --skipNonCoveredRegions \
-        --extendReads 40 \
+        --extendReads \
         --centerReads \
         "${IGNORE_DUPLICATES}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
