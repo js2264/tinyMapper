@@ -106,20 +106,24 @@ Make sure tinyMapper script (`tinyMapper.sh`) is available by adding its locatio
 
 ```sh
 conda activate tm
-sbatch --mem 32G -c 32 --wrap "tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> --threads 32"
+sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> --threads 8"
+
 # For ChIP processing pipelines
 # - Without input
-sbatch --mem 32G -c 32 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP -g ~/appascratch/genomes/S288c/S288c  --threads 32"
+sbatch --mem 40G -c 10 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP -g ~/appascratch/genomes/S288c/S288c  --threads 8"
 # - With input and without calibration
-sbatch --mem 32G -c 32 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP.IP -i tests/testChIP.input -g ~/appascratch/genomes/S288c/S288c  --threads 32"
+sbatch --mem 40G -c 10 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP.IP -i tests/testChIP.input -g ~/appascratch/genomes/S288c/S288c  --threads 8"
 # - With input and with calibration
-sbatch --mem 32G -c 32 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP.IP -i tests/testChIP.input -g ~/appascratch/genomes/S288c/S288c -c ~/appascratch/genomes/CBS138/CBS138 --threads 32"
+sbatch --mem 40G -c 10 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP.IP -i tests/testChIP.input -g ~/appascratch/genomes/S288c/S288c -c ~/appascratch/genomes/CBS138/CBS138 --threads 8"
+
 # For RNA processing pipelines
-sbatch --mem 32G -c 32 --wrap "tinyMapper.sh -m RNA -s tests/testRNA -g ~/appascratch/genomes/S288c/S288c --threads 32"
+sbatch --mem 40G -c 10 --wrap "tinyMapper.sh -m RNA -s tests/testRNA -g ~/appascratch/genomes/S288c/S288c --threads 8"
+
 # For MNase processing pipelines
-sbatch --mem 32G -c 32 --wrap "tinyMapper.sh --mode MNase --sample tests/testMNase --genome ~/appascratch/genomes/S288c/S288c --threads 32"
+sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode MNase --sample tests/testMNase --genome ~/appascratch/genomes/S288c/S288c --threads 8"
+
 # For Hi-C processing pipelines
-sbatch --mem 32G -c 32 --wrap "tinyMapper.sh --mode HiC --sample tests/testHiC --genome ~/appascratch/genomes/S288c/S288c --threads 32"
+sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode HiC --sample tests/testHiC --genome ~/appascratch/genomes/S288c/S288c --threads 8"
 ```
 
 ### Examples
