@@ -16,9 +16,9 @@ DESTINATION=~/bin/
 mkdir ${DESTINATION} 
 cd ${DESTINATION}
 git clone https://github.com/js2264/tinyMapper.git
-conda env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
+micromamba env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
 echo 'export PATH=$PATH:"'${DESTINATION}'/tinyMapper/"' >> ~/.bashrc
-conda activate tm
+micromamba activate tm
 tinyMapper.sh --help
 ```
 
@@ -38,10 +38,10 @@ cd ${DESTINATION}
 git clone https://github.com/js2264/tinyMapper.git
 ```
 
-- Install tinyMapper requirements using `conda` (assumes that `conda` is already installed...):
+- Install tinyMapper requirements using `micromamba` (assumes that `micromamba` is already installed...):
 
 ```sh
-conda env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
+micromamba env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
 ```
 
 - Add tinyMapper script to your PATH so you can call it by `tinyMapper.sh`, rather than `~/bin/tinyMapper/tinyMapper.sh`:
@@ -50,10 +50,10 @@ conda env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
 echo 'export PATH=$PATH:"'${DESTINATION}'/tinyMapper/"' >> ~/.bashrc
 ```
 
-- Activate the created `conda` environemnt and start using `tinyMapper.sh`: 
+- Activate the created `micromamba` environemnt and start using `tinyMapper.sh`: 
 
 ```sh
-conda activate tm
+micromamba activate tm
 tinyMapper.sh --help
 ```
 
