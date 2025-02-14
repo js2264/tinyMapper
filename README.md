@@ -105,7 +105,7 @@ Alternatively, the script will try to find paired-end files named \<SAMPLE\>_R[1
 Make sure tinyMapper script (`tinyMapper.sh`) is available by adding its location to your path (`echo 'export PATH=$PATH:"~/bin/tinyMapper/"' >> ~/.bashrc`).
 
 ```sh
-conda activate tm
+micromamba activate tm
 sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> --threads 8"
 
 # For ChIP processing pipelines
