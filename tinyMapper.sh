@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.14.3
+VERSION=0.14.4
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -435,9 +435,9 @@ if test "${MODE}" == HiC ; then
     SAMPLE_PAIRS_VALID_IDX_PCRFREE="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".valid_idx_pcrfree.pairs
     SAMPLE_PAIRS_FRAGS="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".frags.tsv
     SAMPLE_PAIRS_DIST="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".event_distance.pdf
-    SAMPLE_PAIRS_HIST="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".frags_hist.pdf
+    SAMPLE_PAIRS_HIST="${OUTDIR}"/plots/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".frags_hist.pdf
     SAMPLE_PAIRS_DISTR="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".event_distribution.pdf
-    SAMPLE_PAIRS_LAW="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".distance_law.pdf
+    SAMPLE_PAIRS_LAW="${OUTDIR}"/plots/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".distance_law.pdf
 fi
 
 mkdir -p "${OUTDIR}"/logs
@@ -768,6 +768,7 @@ mkdir -p "${OUTDIR}"/matrices/
 mkdir -p "${OUTDIR}"/matrices/"${SAMPLE_BASE}"/
 mkdir -p "${OUTDIR}"/pairs/
 mkdir -p "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/
+mkdir -p "${OUTDIR}"/plots/
 mkdir -p "${OUTDIR}"/stats/
 mkdir -p "${OUTDIR}"/logs/
 
