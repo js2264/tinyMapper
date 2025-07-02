@@ -1,7 +1,7 @@
 channels:
   - conda-forge
   - bioconda
-  - defaults
+  - nodefaults
 dependencies:
   - bedtools
   - deeptools
@@ -10,4 +10,4 @@ dependencies:
   - tree
   - java-jdk
   - ucsc-bedGraphToBigWig
-  - hicstuff >= 3.2.1
+  - hicstuff>=3.2.4

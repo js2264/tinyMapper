@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.14.4
+VERSION=0.14.5
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
