@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eu
 
 VERSION=0.14.5
 
@@ -469,8 +469,8 @@ function cleanup() {
     local status=$?
     if ( test "${status}" -gt 0 ) ; then
         echo "Caught signal ${status} ... cleaning up & quitting."
-        # for file in `find "${OUTDIR}" -iname "*${HASH}*" | grep -v "_log.txt"`
-        for file in `find "${OUTDIR}" -iname "*${HASH}*"`
+        for file in `find "${OUTDIR}" -iname "*${HASH}*" | grep -v "_log.txt"`
+        # for file in `find "${OUTDIR}" -iname "*${HASH}*"`
         do
             rm -f "${file}"
         done
@@ -1514,8 +1514,10 @@ if test "${KEEPFILES}" == 1 ; then
     rm --force "${OUTDIR}"/fastq/genome/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${GENOME}"^"${HASH}"*
     rm --force "${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".cool
-    rm --force "${SAMPLE_ALIGNED_GENOME_FWD}"
-    rm --force "${SAMPLE_ALIGNED_GENOME_REV}"
+    if test "${MODE}" == HiC ; then
+        rm --force "${SAMPLE_ALIGNED_GENOME_FWD}"
+        rm --force "${SAMPLE_ALIGNED_GENOME_REV}"
+    fi
     # rm --recursive --force "${OUTDIR}"/tmp/"${HASH}"/
 fi
 
