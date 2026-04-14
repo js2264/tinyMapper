@@ -31,6 +31,7 @@ function usage() {
     echo -e "   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fq.gz\`"
     echo -e "   -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
     echo -e "   -bl|--blacklist <BED>            Bed file of blacklist regions"
+    echo -e "   -gs|--gsize <GSIZE>              Genome size for macs2 peak calling (default: 13000000 for S. cerevisiae)"
     echo -e "   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)"
     echo -e "                                    Default: '' (no specific options)"
     echo -e "   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)"
@@ -191,6 +192,7 @@ MNASESIZES='130,200'
 RE=' DpnII,HinfI '
 BALANCEOPTIONS='--cis-only --min-nnz 3 --mad-max 7'
 BLACKLISTBEDFILE=''
+GSIZE='13000000'
 KEEPDUPLICATES=1
 KEEPFILES=1
 CPU=8
@@ -278,6 +280,11 @@ do
         ;;
         -bl|--blacklist)
         BLACKLISTBEDFILE=${2}
+        shift 
+        shift 
+        ;;
+        -gs|--gsize)
+        GSIZE=${2}
         shift 
         shift 
         ;;
@@ -810,6 +817,9 @@ else
 fi
 fn_log "CPU         : ${CPU}" 2>&1 | tee -a "${LOGFILE}"
 fn_log "OUTDIR      : ${OUTDIR}" 2>&1 | tee -a "${LOGFILE}"
+if test "${DO_PEAKS}" == 0 ; then
+    fn_log "GSIZE       : ${GSIZE}" 2>&1 | tee -a "${LOGFILE}"
+fi
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
 fn_log "bowtie2     : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 if test "${MODE}" == RNA ; then
@@ -1357,7 +1367,7 @@ if test "${DO_PEAKS}" == 0 ; then
         cmd="macs2 callpeak \
             -t "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
             --format BAMPE \
-            --gsize 13000000 \
+            --gsize "${GSIZE}" \
             --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
             --name "${SAMPLE_BASE}_genome-${GENOME}_${HASH}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -1370,7 +1380,7 @@ if test "${DO_PEAKS}" == 0 ; then
                 -t "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
                 -c "${INPUT_ALIGNED_GENOME_FILTERED}" \
                 --format BAMPE \
-                --gsize 13000000 \
+                --gsize "${GSIZE}" \
                 --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
                 --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}""
             fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
@@ -1381,7 +1391,7 @@ if test "${DO_PEAKS}" == 0 ; then
                 -t "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
                 -c "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
                 --format BAMPE \
-                --gsize 13000000 \
+                --gsize "${GSIZE}" \
                 --outdir "${OUTDIR}"/peaks/"${SAMPLE_BASE}" \
                 --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}""
             fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
