@@ -201,7 +201,7 @@ RE=' DpnII,HinfI '
 BALANCEOPTIONS='--cis-only --min-nnz 3 --mad-max 7'
 BLACKLISTBEDFILE=''
 GSIZE='13000000'
-KEEPDUPLICATES=1
+KEEPDUPLICATES=0
 KEEPFILES=1
 CPU=8
 
@@ -322,7 +322,7 @@ do
         shift 
         ;;
         -d|--duplicates)
-        KEEPDUPLICATES=0
+        KEEPDUPLICATES=1
         shift 
         ;;
         #####
@@ -386,8 +386,8 @@ SAMTOOLS_OPTIONS=" -@ ${CPU} --output-fmt bam "
 DO_INPUT=`is_set "${INPUT}"`
 DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
-REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " -r " ; else echo " " ; fi`
-IGNORE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " "${IGNORE_DUPLICATES}" " ; else echo " " ; fi`
+REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 0 ; then echo " -r " ; else echo " " ; fi`
+IGNORE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 0 ; then echo "--ignoreDuplicates" ; else echo "" ; fi`
 BLACKLIST_OPTIONS=`if test $(is_set "${BLACKLISTBEDFILE}") == 0 ; then echo " --blackListFileName ${BLACKLISTBEDFILE} " ; else echo " " ; fi`
 BASE_REZ=`echo "${HICREZ}" | sed 's/,.*//'`
 MNASE_MINSIZE=`echo "${MNASESIZES}" | sed 's/,.*//'`
@@ -821,7 +821,7 @@ if test "${MODE}" == HiC ; then
     fn_log "Binning          : ${HICREZ}" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Balancing opt.   : ${BALANCEOPTIONS}" 2>&1 | tee -a "${LOGFILE}"
 else 
-    fn_log "Keep dups.  : `if test ${KEEPDUPLICATES} == 0 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
+    fn_log "Keep dups.  : `if test ${KEEPDUPLICATES} == 1 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Align. opt. : ${BOWTIEOPTIONS}" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Filt. opt.  : ${FILTEROPTIONS}" 2>&1 | tee -a "${LOGFILE}"
 fi
