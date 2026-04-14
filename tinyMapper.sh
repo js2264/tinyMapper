@@ -151,11 +151,11 @@ function fn_exec {
     BLUE="\e[96m"
     YELLOW="\e[33m"
     RESET="\e[0m"
-    cmd=`echo $1 | tr -s '' | sed 's,2>>.*,,' `
+    cmd=`echo "$1" | tr -s '' | sed 's,2>>.*,,' `
     if test `is_set $2` == 0 ; then 
         echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${RESET} ${cmd}" >> $2
     fi
-    eval ${cmd}
+    eval "$cmd"
     
     # check success of eval 
     if test $? -ne 0 ; then
