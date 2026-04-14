@@ -156,6 +156,14 @@ function fn_exec {
         echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${RESET} ${cmd}" >> $2
     fi
     eval ${cmd}
+    
+    # check success of eval 
+    if test $? -ne 0 ; then
+        echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${RESET} Command failed: ${cmd}" 2>&1 | tee -a "${LOGFILE}"
+        echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${RESET} Aborting now." 2>&1 | tee -a "${LOGFILE}"
+        rm --force "${LOGFILE}"
+        exit 1
+    fi
 }
 
 function fastqfastcnt {
