@@ -419,6 +419,7 @@ fi
 
 if test "${MODE}" == MNase ; then 
     SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".bam
+    SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE40="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^40bp^"${HASH}".bam
     SAMPLE_READSIZE_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}"."${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}".CPM.bw
     SAMPLE_NUCPOS_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".nucpos.CPM.bw
     SAMPLE_NUCCOV_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".nuccov.CPM.bw
@@ -1110,6 +1111,15 @@ if test "${MODE}" == MNase ; then
         | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
     fn_exec "${cmd}" "${LOGFILE}"
     cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+    ## Also generate a bam file with filtered fragments but resized to 40 bp, but not using bamtools
+    fn_log "Generating bam file with filtered fragments resized to 40 bp" 2>&1 | tee -a "${LOGFILE}"
+    cmd="samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
+        | mawk '/^@/ || (sqrt((\$9^2)) > "${MNASE_MINSIZE}" && sqrt((\$9^2)) < "${MNASE_MAXSIZE}") { if (sqrt((\$9^2)) > 40) { \$9 = 40 * (\$9 / sqrt((\$9^2))) } print \$0 }' \
+        | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE40}""
+    fn_exec "${cmd}" "${LOGFILE}"
+    cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE40}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 fi
 
