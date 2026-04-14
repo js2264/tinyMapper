@@ -42,7 +42,7 @@ function usage() {
     echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--mapping iterative --duplicates --filter --plot --no-cleanup\`)"
     echo -e "   -b|--binning <#>                 Generate multi-resolution contact matrix at a given minimal resolution and 4 increasing resolutions"
     echo -e "                                    Default: '--binning 1000'"
-    echo -e "   -b|--balance <BALANCE>           Balancing options for \`cooler zoomify\` (between single quotes)"
+    echo -e "   -ba|--balance <BALANCE>           Balancing options for \`cooler zoomify\` (between single quotes)"
     echo -e "                                    Default: '--cis-only --min-nnz 3 --mad-max 7'"
     echo -e "   -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)"
     echo -e ""
@@ -296,7 +296,7 @@ do
         shift 
         shift 
         ;;
-        -b|--balance)
+        -ba|--balance)
         BALANCEOPTIONS=${2}
         shift 
         shift 
