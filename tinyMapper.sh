@@ -777,6 +777,7 @@ mkdir -p "${OUTDIR}"/matrices/"${SAMPLE_BASE}"/
 mkdir -p "${OUTDIR}"/pairs/
 mkdir -p "${OUTDIR}"/pairs/"${SAMPLE_BASE}"/
 mkdir -p "${OUTDIR}"/plots/
+mkdir -p "${OUTDIR}"/plots/"${SAMPLE_BASE}"/
 mkdir -p "${OUTDIR}"/stats/
 mkdir -p "${OUTDIR}"/logs/
 
@@ -821,7 +822,9 @@ if test "${DO_PEAKS}" == 0 ; then
     fn_log "GSIZE       : ${GSIZE}" 2>&1 | tee -a "${LOGFILE}"
 fi
 echo -e "---" 2>&1 | tee -a "${LOGFILE}"
-fn_log "bowtie2     : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+if test "${MODE}" == ChIP ; then
+    fn_log "bowtie2     : `type -P bowtie2` (version: `bowtie2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fi
 if test "${MODE}" == RNA ; then
     fn_log "STAR        : `type -P STAR` (version: `STAR --version`)" 2>&1 | tee -a "${LOGFILE}"
 fi
@@ -1494,7 +1497,6 @@ if test "${KEEPFILES}" == 1 ; then
     rm --force "${OUTDIR}"/fastq/spikein/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^"${HASH}"*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".cool
     rm --force "${SAMPLE_ALIGNED_GENOME_FWD}"
-    rm --force "${SAMPLE_ALIGNED_GENOME_REV}"
     rm --force "${SAMPLE_ALIGNED_GENOME_REV}"
     # rm --recursive --force "${OUTDIR}"/tmp/"${HASH}"/
 fi
