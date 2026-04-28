@@ -100,7 +100,7 @@ Note that fastq files shoud ideally be named following this convention:
 
 Alternatively, the script will try to find paired-end files named \<SAMPLE\>_R[12].fastq.gz, \<SAMPLE\>_nxq_R[12].fq.gz, \<SAMPLE\>.end1.fq.gz or \<SAMPLE\>.end[12].gz. 
 
-### Using tinyMapper on a cluster with Slurm
+### Using tinyMapper on a cluster (eg Maestro) with Slurm
 
 Make sure tinyMapper script (`tinyMapper.sh`) is available by adding its location to your path (`echo 'export PATH=$PATH:"~/bin/tinyMapper/"' >> ~/.bashrc`).
 
@@ -124,6 +124,16 @@ sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode MNase --sample tests/testMNa
 
 # For Hi-C processing pipelines
 sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode HiC --sample tests/testHiC --genome ~/appascratch/genomes/S288c/S288c --threads 8"
+```
+
+## Fetching reads prior to mapping
+
+This is typically done with `rsync`, and will depend on where the data is stored. 
+For instance, if the data is stored on `gaia` server for the Institut Pasteur, 
+you can fetch the data with:  
+
+```sh
+rsync -vhrP user@sftpcampus:/pasteur/gaia/projets/p02/Rsg_reads/<FOLDER>/<ID>*.fq.gz .
 ```
 
 ### Examples
