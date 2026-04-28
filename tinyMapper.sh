@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-VERSION=0.14.5
+VERSION=0.14.15
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -38,7 +38,7 @@ function usage() {
     echo -e "                                    Default: '-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10'"
     echo -e "                                    ('-f 0x001 -f 0x002 -F 0x004 -F 0x008' to only keep concordant mapped and paired reads)"
     echo -e "                                    ('-q 10' to filter out reads with mapping quality score < 10)"
-    echo -e "   -d|--duplicates                  Keep duplicate reads"
+    echo -e "   -d|--duplicates                  Remove duplicate reads (default: duplicates are kept)"
     echo -e ""
     echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--mapping iterative --duplicates --filter --plot --no-cleanup\`)"
     echo -e "   -b|--binning <#>                 Generate multi-resolution contact matrix at a given minimal resolution and 4 increasing resolutions"
@@ -386,8 +386,8 @@ SAMTOOLS_OPTIONS=" -@ ${CPU} --output-fmt bam "
 DO_INPUT=`is_set "${INPUT}"`
 DO_CALIBRATION=`is_set "${SPIKEIN}"`
 DO_PEAKS=`if test "${MODE}" == 'ChIP' || test "${MODE}" == 'ATAC'; then echo 0; else echo 1; fi`
-REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 0 ; then echo " -r " ; else echo " " ; fi`
-IGNORE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 0 ; then echo "--ignoreDuplicates" ; else echo "" ; fi`
+REMOVE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo " -r " ; else echo " " ; fi`
+IGNORE_DUPLICATES=`if test "${KEEPDUPLICATES}" == 1 ; then echo "--ignoreDuplicates" ; else echo "" ; fi`
 BLACKLIST_OPTIONS=`if test $(is_set "${BLACKLISTBEDFILE}") == 0 ; then echo " --blackListFileName ${BLACKLISTBEDFILE} " ; else echo " " ; fi`
 BASE_REZ=`echo "${HICREZ}" | sed 's/,.*//'`
 MNASE_MINSIZE=`echo "${MNASESIZES}" | sed 's/,.*//'`
@@ -1119,16 +1119,15 @@ if test "${MODE}" == MNase ; then
         | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
     fn_exec "${cmd}" "${LOGFILE}"
     cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}""
-    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+    fn_exec "${cmd}" "${LOGFILE}"
 
     ## Also generate a bam file with filtered fragments but resized to 40 bp, but not using bamtools
     fn_log "Generating bam file with filtered fragments resized to 40 bp" 2>&1 | tee -a "${LOGFILE}"
-    cmd="samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
-        | mawk '/^@/ || (sqrt((\$9^2)) > "${MNASE_MINSIZE}" && sqrt((\$9^2)) < "${MNASE_MAXSIZE}") { if (sqrt((\$9^2)) > 40) { \$9 = 40 * (\$9 / sqrt((\$9^2))) } print \$0 }' \
-        | samtools view -b - > "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE40}""
+    cmd="samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE}" \
+        | mawk -F'\t' -v OFS='\t' '{ if (\$1 ~ /^@/) { print \$0 } else { if (\$9 > 0) { \$4 = \$4 + int((\$9 - 40) / 2) ; \$9 = 40 } else { \$4 = \$4 - int((\$9 + 40) / 2) ; \$9 = -40 } print \$0 } }' \
+        | samtools view -b - \
+        | samtools sort ${SAMTOOLS_OPTIONS} --write-index -l 9 -T "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE40}"_resized_sorting -o "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE40}""
     fn_exec "${cmd}" "${LOGFILE}"
-    cmd="samtools index -@ "${CPU}" "${SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE40}""
-    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 fi
 
 ## ------------------------------------------------------------------
@@ -1423,7 +1422,9 @@ if test "${DO_PEAKS}" == 0 ; then
 
 fi
 
-fi # ------------------------------------- Exit HiC if...else statement
+fi 
+
+# ------------------------------------- Exit HiC if...else statement
 
 ## ------------------------------------------------------------------
 ## ------------------- CHECK NB OF READS ----------------------------
