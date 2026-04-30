@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-VERSION=0.14.16
+VERSION=0.14.17
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -38,7 +38,7 @@ function usage() {
     echo -e "                                    Default: '-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10'"
     echo -e "                                    ('-f 0x001 -f 0x002 -F 0x004 -F 0x008' to only keep concordant mapped and paired reads)"
     echo -e "                                    ('-q 10' to filter out reads with mapping quality score < 10)"
-    echo -e "   -d|--duplicates                  Keep duplicate reads (default: duplicates are removed)"
+    echo -e "   -d|--duplicates                  Keep duplicate reads (by default, duplicates are removed)"
     echo -e ""
     echo -e "   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--mapping iterative --duplicates --filter --plot --no-cleanup\`)"
     echo -e "   -b|--binning <#>                 Generate multi-resolution contact matrix at a given minimal resolution and 4 increasing resolutions"
@@ -151,7 +151,7 @@ function fn_exec {
     BLUE="\e[96m"
     YELLOW="\e[33m"
     RESET="\e[0m"
-    cmd=`echo "$1" | tr -s '' | sed 's,2>>.*,,' `
+    cmd=`echo "$1" | sed 's,2>>.*,,' `
     if test `is_set $2` == 0 ; then 
         echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${RESET} ${cmd}" >> $2
     fi
@@ -469,8 +469,9 @@ function cleanup() {
     local status=$?
     if ( test "${status}" -gt 0 ) ; then
         echo "Caught signal ${status} ... cleaning up & quitting."
+        # Preserve per-run log files during signal/error-triggered cleanup so
+        # diagnostic output remains available for debugging failed runs.
         for file in `find "${OUTDIR}" -iname "*${HASH}*" | grep -v "_log.txt"`
-        # for file in `find "${OUTDIR}" -iname "*${HASH}*"`
         do
             rm -f "${file}"
         done
