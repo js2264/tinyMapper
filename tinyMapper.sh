@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-VERSION=0.14.17
+VERSION=0.14.18
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -186,18 +186,18 @@ function fastqfastcnt {
 
 # Default values of arguments
 
-MODE='ChIP'
-SAMPLE=''
+MODE='HiC'
+SAMPLE='tests/testHiC'
 INPUT=''
-GENOME_=''
+GENOME_='~/genomes/S288c/S288c'
 SPIKEIN_=''
 OUTDIR='results'
 BOWTIEOPTIONS='--maxins 1000'
 FILTEROPTIONS='-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10'
 HICSTUFFOPTIONS=' --mapping iterative --duplicates --filter --plot --no-cleanup'
-HICREZ='1000'
+HICREZ='500'
 MNASESIZES='130,200'
-RE=' DpnII,HinfI '
+RE=' HpaII,HinfI '
 BALANCEOPTIONS='--cis-only --min-nnz 3 --mad-max 7'
 BLACKLISTBEDFILE=''
 GSIZE='13000000'
@@ -473,7 +473,7 @@ function cleanup() {
         # diagnostic output remains available for debugging failed runs.
         for file in `find "${OUTDIR}" -iname "*${HASH}*" | grep -v "_log.txt"`
         do
-            rm -f "${file}"
+            rm -rf "${file}"
         done
         exit 1
     fi
@@ -1479,22 +1479,22 @@ if test "${MODE}" == HiC ; then
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam 
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
     # mv
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool "${SAMPLE_COOL}" 2>/dev/null
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".mcool "${SAMPLE_MCOOL}" 2>/dev/null
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}" 2>/dev/null
-    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}" 2>/dev/null
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool "${SAMPLE_COOL}" 2>/dev/null || true
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".mcool "${SAMPLE_MCOOL}" 2>/dev/null || true
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}" 2>/dev/null || true
+    mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}" 2>/dev/null || true
     if [[ "${HICSTUFFOPTIONS}" =~ --duplicates || "${HICSTUFFOPTIONS}" =~ -d ]] ; then 
-        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}".gz 2>/dev/null
+        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}".gz
     elif [[ "${HICSTUFFOPTIONS}" =~ --filter || "${HICSTUFFOPTIONS}" =~ -f ]] ; then 
-        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_FILTERED}".gz 2>/dev/null
+        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_FILTERED}".gz
     else 
-        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs.gz "${SAMPLE_PAIRS_VALID_IDX}".gz 2>/dev/null
+        mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs.gz "${SAMPLE_PAIRS_VALID_IDX}".gz
     fi
-    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}" 2>/dev/null
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}" 2>/dev/null
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}" 2>/dev/null
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distribution.pdf "${SAMPLE_PAIRS_DISTR}" 2>/dev/null
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_distance_law.pdf "${SAMPLE_PAIRS_LAW}" 2>/dev/null
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}" 2>/dev/null || true
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}" 2>/dev/null || true
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}" 2>/dev/null || true
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distribution.pdf "${SAMPLE_PAIRS_DISTR}" 2>/dev/null || true
+    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_distance_law.pdf "${SAMPLE_PAIRS_LAW}" 2>/dev/null || true
 fi
 
 if test "${KEEPFILES}" == 1 ; then
