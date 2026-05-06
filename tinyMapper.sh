@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-VERSION=0.14.18
+VERSION=0.14.19
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -455,6 +455,7 @@ if test "${MODE}" == HiC ; then
     SAMPLE_PAIRS_HIST="${OUTDIR}"/plots/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".frags_hist.pdf
     SAMPLE_PAIRS_DISTR="${OUTDIR}"/pairs/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".event_distribution.pdf
     SAMPLE_PAIRS_LAW="${OUTDIR}"/plots/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".distance_law.pdf
+    SAMPLE_PAIRS_LAW_TSV="${OUTDIR}"/plots/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".distance_law.tsv
 fi
 
 mkdir -p "${OUTDIR}"/logs
@@ -879,6 +880,23 @@ if test "${MODE}" == HiC ; then
         --genome "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta \
         "${SAMPLE_R1}" "${SAMPLE_R2}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+    ## Generate distance law files
+    if [[ "${HICSTUFFOPTIONS}" =~ --duplicates || "${HICSTUFFOPTIONS}" =~ -d ]] ; then 
+        FILE="${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs.gz
+    elif [[ "${HICSTUFFOPTIONS}" =~ --filter || "${HICSTUFFOPTIONS}" =~ -f ]] ; then 
+        FILE="${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs.gz
+    else 
+        FILE="${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs.gz
+    fi
+    fn_log "Generating distance law file" 2>&1 | tee -a "${LOGFILE}"
+    cmd="hicstuff distancelaw --average -o "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".ps.pdf -O "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".ps.tsv --pairs "${FILE}""
+    set +e
+    eval "${cmd}" 2>> "${LOGFILE}"
+    if [ $? -ne 0 ]; then
+        fn_warning "Failed to generate distance law file. Continuing without it." 2>&1 | tee -a "${LOGFILE}"
+    fi
+    set -e
 
     fn_log "Computing coverage track" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools merge -@ "${CPU}" "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam"
@@ -1494,7 +1512,8 @@ if test "${MODE}" == HiC ; then
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distance.pdf "${SAMPLE_PAIRS_DIST}" 2>/dev/null || true
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_frags_hist.pdf "${SAMPLE_PAIRS_HIST}" 2>/dev/null || true
     mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_event_distribution.pdf "${SAMPLE_PAIRS_DISTR}" 2>/dev/null || true
-    mv "${OUTDIR}"/plots/"${SAMPLE_BASE}"^"${HASH}"_distance_law.pdf "${SAMPLE_PAIRS_LAW}" 2>/dev/null || true
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".ps.pdf "${SAMPLE_PAIRS_LAW}" 2>/dev/null || true
+    mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".ps.tsv "${SAMPLE_PAIRS_LAW_TSV}" 2>/dev/null || true
 fi
 
 if test "${KEEPFILES}" == 1 ; then
