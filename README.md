@@ -3,7 +3,12 @@
 A minimalist yet versatile workflow to process ChIP-seq (with or without
 input/spikein), RNA-seq, MNase-seq, ATAC-seq, Hi-C and shotgun sequencing data.
 Hi-C mode delegates to [`hicstuff`](http://doi.org/10.5281/zenodo.4066363) and
-`cooler`. All modes require **paired-end** data.
+`cooler`.
+
+tinyMapper supports both **paired-end** and **single-end** reads. Hi-C mode
+requires paired-end data. Spikein calibration (ChIP) also requires paired-end.
+For single-end MNase, fragment-size filtering is skipped and only a standard
+CPM track is produced.
 
 > **Note:** tinyMapper is a Python package that orchestrates external CLI tools
 > (bowtie2, STAR, samtools, deeptools, macs2, hicstuff). It does **not**
@@ -63,52 +68,84 @@ with existing Slurm scripts and `autotinymapper`.
 ## Usage
 
 ```
-tinymapper [OPTIONS]
+ Usage: tinymapper [OPTIONS]
 
-Required:
-  -m, --mode      ChIP | MNase | ATAC | RNA | HiC | shotgun
-  -s, --sample    Path prefix to sample FASTQ files
-                  (e.g. ~/reads/JS001 for ~/reads/JS001_R{1,2}.fq.gz)
-  -g, --genome    Path prefix to reference genome index
-                  (e.g. ~/genomes/W303/W303 for bowtie2/STAR index)
+ tinyMapper — map and process sequencing reads.
+ Modes:
+   ChIP    — ChIP-seq (bowtie2 → samtools → bamCoverage → macs2)
+   RNA     — RNA-seq  (STAR → samtools → bamCoverage × 3)
+   ATAC    — ATAC-seq (bowtie2 → samtools → bamCoverage → macs2)
+   MNase   — MNase-seq (bowtie2 → samtools → size filter → 3 tracks)
+   HiC     — Hi-C     (hicstuff pipeline → cooler → mcool)
+   shotgun — Shotgun  (bowtie2 single-end → samtools → bamCoverage)
 
-Core optional:
-  -o, --output         Output directory (default: results/)
-  -i, --input          (ChIP) Path prefix to input/control sample
-  -c, --calibration    (ChIP) Path prefix to spikein/calibration genome index
-  -t, --threads        Number of CPU threads (default: 8)
 
-Alignment / filtering:
-  -a, --alignment      Extra bowtie2 options (default: '--maxins 1000')
-  -f, --filter         samtools view filter options (default: '-f 2 -q 10')
-  -bl, --blacklist     BED file of blacklist regions
-  --gsize              Effective genome size for macs2 (default: 1.2e7)
-  -d, --duplicates     Keep duplicate reads (flag, default: remove duplicates)
+ Examples:
+   tinymapper -m ChIP -s ~/HB44 -g ~/genomes/R64-1-1/R64-1-1 -o ~/results
+   tinymapper -m RNA  -s ~/AB4  -g ~/genomes/W303/W303 -o ~/results
+   tinymapper -m HiC  -s ~/CH266 -g ~/genomes/W303/W303 --binning 1000
 
-HiC:
-  --hicstuff           Extra arguments for hicstuff (default: '--iterative --duplicates --filter --plot')
-  --restriction        Restriction enzyme(s) (default: 'DpnII,HinfI')
-  --binning            Matrix resolutions, comma-separated (default: '10000,20000,40000,160000,1280000')
-  --balance            Balance Hi-C matrix (flag)
-
-MNase:
-  -M, --MNaseSizes     Fragment size range MIN,MAX (default: '70,250')
-
-Output:
-  -k, --keepIntermediate    Keep intermediate files
-  --dry-run                 Print commands without executing
-  -v, --version             Show version and exit
-  -h, --help                Show this message and exit
+╭─ Required ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --mode    -m  [chip|rna|atac|mnase|hic|shotgun]  Mapping mode (ChIP, MNase, ATAC, RNA, HiC, shotgun). [required]                                            │
+│ *  --sample  -s  TEXT                               Path prefix to sample FASTQ files.  For ~/reads/JS001_R{1,2}.fq.gz use --sample ~/reads/JS001 [required]   │
+│ *  --genome  -g  TEXT                               Path prefix to reference genome.  For ~/genome/W303/W303.fa use --genome ~/genome/W303/W303 [required]     │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Core optional ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --output       -o  PATH     Directory to store results. [default: results]                                                                                     │
+│ --input        -i  TEXT     (ChIP) Path prefix to input/control sample.                                                                                        │
+│ --calibration  -c  TEXT     (ChIP) Path prefix to spikein/calibration genome.                                                                                  │
+│ --threads      -t  INTEGER  Number of CPU threads. [default: 8]                                                                                                │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Alignment / filtering ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --alignment   -a   TEXT  Extra options passed to bowtie2 (use single quotes). [default: --maxins 1000]                                                         │
+│ --filter      -f   TEXT  Filtering options for samtools view (use single quotes). [default: -f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10]                         │
+│ --blacklist   -bl  TEXT  BED file of blacklist regions for bamCoverage.                                                                                        │
+│ --gsize       -gs  TEXT  Effective genome size for macs2 peak calling. [default: 13000000]                                                                     │
+│ --duplicates  -d         Keep duplicate reads (default: remove duplicates).                                                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ HiC ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --hicstuff     -hic  TEXT  Extra arguments passed to hicstuff pipeline. [default: --mapping iterative --duplicates --filter --plot --no-cleanup]               │
+│ --restriction  -re   TEXT  Restriction enzyme(s) for HiC (e.g. DpnII,HinfI). [default: HpaII,HinfI]                                                            │
+│ --binning      -b    TEXT  Minimum bin resolution for HiC matrix (bp); comma-separated for multi-res. [default: 500]                                           │
+│ --balance      -ba   TEXT  Balancing options for cooler zoomify. [default: --cis-only --min-nnz 3 --mad-max 7]                                                 │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ MNase ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --MNaseSizes  -M  TEXT  Min,Max fragment size for MNase track. [default: 130,200]                                                                              │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --keepIntermediate  -k  Keep intermediate SAM / unmapped FASTQ files.                                                                                          │
+│ --dry-run               Log commands without executing them.                                                                                                   │
+│ --help              -h  Show this message and exit.                                                                                                            │
+│ --version           -v  Show the version and exit.                                                                                                             │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-FASTQ files must be paired-end. The sample prefix is matched against these
-filename patterns (in order):
+FASTQ files are detected automatically from the sample prefix. tinyMapper
+tries paired-end patterns first, then falls back to single-end:
 
+**Paired-end patterns** (both R1 and R2 must exist):
 - `<SAMPLE>_R1.fq.gz` / `<SAMPLE>_R2.fq.gz` *(preferred)*
 - `<SAMPLE>_R1.fastq.gz` / `<SAMPLE>_R2.fastq.gz`
 - `<SAMPLE>_nxq_R1.fq.gz` / `<SAMPLE>_nxq_R2.fq.gz`
 - `<SAMPLE>.end1.fq.gz` / `<SAMPLE>.end2.fq.gz`
 - `<SAMPLE>.end1.gz` / `<SAMPLE>.end2.gz`
+- Illumina `<SAMPLE>_S##_R1_*.gz` / `<SAMPLE>_S##_R2_*.gz`
+
+**Single-end fallback** (R2 not found — only R1 required):
+- `<SAMPLE>_R1.fq.gz`
+- `<SAMPLE>_R1.fastq.gz`
+- `<SAMPLE>_nxq_R1.fq.gz`
+- `<SAMPLE>.fq.gz`
+- `<SAMPLE>.fastq.gz`
+
+| Mode | SE support | Notes |
+|------|-----------|-------|
+| ChIP | Yes | input control supported; spikein calibration requires PE |
+| RNA | Yes | forward/reverse strand tracks still produced |
+| ATAC | Yes | peaks called with `--format BAM` instead of `BAMPE` |
+| MNase | Yes | fragment-size filter and nucleosome tracks skipped; CPM track only |
+| shotgun | Yes | always single-end (R1+R2 concatenated as -U if both present) |
+| HiC | **No** | paired-end required |
 
 ---
 
@@ -231,29 +268,6 @@ surface (e.g. from `autotinymapper` Slurm scripts):
 sbatch --mem 40G -c 10 --wrap \
     "tinyMapper.sh -m ChIP -s ~/reads/JS001_IP -g ~/genomes/S288c/S288c --threads 8"
 ```
-
----
-
-## Fetching reads
-
-```sh
-rsync -vhrP user@sftpcampus:/pasteur/gaia/projets/p02/Rsg_reads/<FOLDER>/<ID>*.fq.gz .
-```
-
----
-
-## Processing details
-
-| Step | Detail |
-|------|--------|
-| Alignment | bowtie2 (all modes except RNA → STAR) |
-| BAM filtering | fixmate, markdup, `samtools view -f 2 -q 10` |
-| Duplicate removal | `samtools markdup` (skip with `--duplicates`) |
-| Coverage tracks | `bamCoverage` — CPM; calibrated (ChIP+spikein); fwd/rev (RNA) |
-| Peak calling | `macs2 callpeak` (ChIP, ATAC) |
-| MNase fragment filter | keep fragments 70–250 bp (configurable with `--MNaseSizes`) |
-| Hi-C | `hicstuff pipeline` → `cooler zoomify` → optionally balanced |
-| Logs | `<output>/logs/<sample>^<op>^<hash>-log.txt` and `-commands.txt` |
 
 ---
 

@@ -1,5 +1,6 @@
 """RNA-seq mode: STAR alignment → samtools sort → bamCoverage (3 tracks).
 
+Supports paired-end and single-end reads.
 Produces:
   - unstranded CPM BigWig
   - forward-strand CPM BigWig
@@ -23,12 +24,12 @@ def run(
     spec: JobSpec,
     paths: RunPaths,
     sample_r1: Path,
-    sample_r2: Path,
+    sample_r2: Path | None,
     input_r1: Path | None,
     input_r2: Path | None,
     log_file: Path,
 ) -> None:
-    """Execute the RNA-seq pipeline."""
+    """Execute the RNA-seq pipeline (paired-end or single-end)."""
     _align_star(spec, paths, sample_r1, sample_r2, log_file)
     _sort_bam(spec, paths, log_file)
     _rna_tracks(spec, paths, log_file)
@@ -43,19 +44,20 @@ def _align_star(
     spec: JobSpec,
     paths: RunPaths,
     r1: Path,
-    r2: Path,
+    r2: Path | None,
     log_file: Path,
 ) -> None:
-    """Run STAR in paired-end mode; output BAM directly (Unsorted)."""
+    """Run STAR; supports paired-end (r1 + r2) and single-end (r1 only)."""
     genome_dir = f"{spec.genome}/STAR/"
     out_bam = paths.sample_aligned_genome_bam
+    read_files = f"{r1} {r2}" if r2 is not None else str(r1)
     logger.info("Mapping sample reads to reference genome with STAR")
     cmd = (
         f"STAR "
         f"--genomeDir {genome_dir} "
         f"--readFilesCommand zcat "
         f"--runThreadN {spec.threads} "
-        f"--readFilesIn {r1} {r2} "
+        f"--readFilesIn {read_files} "
         f"--outFileNamePrefix {out_bam}. "
         f"--outSAMtype BAM Unsorted "
         f"--outSAMunmapped None "

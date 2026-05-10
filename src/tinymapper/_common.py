@@ -17,6 +17,9 @@ from tinymapper.models import JobSpec
 
 logger = logging.getLogger(__name__)
 
+# Filter options to use for single-end BAMs (no paired-in-sequencing flags).
+_SE_FILTER_OPTS = "-F 0x004 -q 10"
+
 
 # ------------------------------------------------------------------ #
 #  Alignment                                                          #
@@ -63,6 +66,20 @@ def align_bowtie2_single(
     run_cmd(cmd, log_file, spec.dry_run)
 
 
+def align_bowtie2_se(
+    spec: JobSpec,
+    genome_prefix: str,
+    r1: Path,
+    out_sam: Path,
+    log_file: Path,
+) -> None:
+    """Run bowtie2 with a single read file (true single-end data)."""
+    cmd = (
+        f"bowtie2 {spec.alignment} --threads {spec.threads} -x {genome_prefix} -U {r1} > {out_sam}"
+    )
+    run_cmd(cmd, log_file, spec.dry_run)
+
+
 # ------------------------------------------------------------------ #
 #  SAMtools filtering                                                  #
 # ------------------------------------------------------------------ #
@@ -94,10 +111,11 @@ def filter_bam_single(
     in_sam: Path,
     out_bam: Path,
     log_file: Path,
+    filter_opts: str = _SE_FILTER_OPTS,
 ) -> None:
-    """sort → view (filter) → sort → BAM, then index (no markdup for single-end)."""
+    """sort → view (filter) → sort → BAM, then index (no fixmate/markdup for SE)."""
     so = spec.samtools_thread_opts
-    fo = spec.filter_opts
+    fo = filter_opts
     cmd = (
         f"samtools sort {so} -T {in_sam}_sorting {in_sam} "
         f"| samtools view {so} {fo} -1 -b - "
@@ -206,14 +224,16 @@ def call_peaks(
     peak_name: str,
     log_file: Path,
     input_bam: Path | None = None,
+    paired: bool = True,
 ) -> None:
-    """macs2 callpeak (paired-end BAMPE)."""
+    """macs2 callpeak.  Uses BAMPE for paired-end data, BAM for single-end."""
     ctrl = f"-c {input_bam} " if input_bam else ""
+    fmt = "BAMPE" if paired else "BAM"
     cmd = (
         f"macs2 callpeak "
         f"-t {sample_bam} "
         f"{ctrl}"
-        f"--format BAMPE "
+        f"--format {fmt} "
         f"--gsize {spec.gsize} "
         f"--outdir {out_dir} "
         f"--name {peak_name}"

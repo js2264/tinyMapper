@@ -28,6 +28,15 @@ _FASTQ_PATTERNS = [
     (".end1.gz", ".end2.gz"),
 ]
 
+# Single-end fallback patterns (R1 only).
+_SINGLE_FASTQ_PATTERNS = [
+    "_R1.fq.gz",
+    "_R1.fastq.gz",
+    "_nxq_R1.fq.gz",
+    ".fq.gz",
+    ".fastq.gz",
+]
+
 
 class TinyMapperRunner:
     """Orchestrates validation, directory setup and mode dispatch."""
@@ -72,6 +81,23 @@ class TinyMapperRunner:
             input_r2: Path | None = None
             if spec.do_input:
                 input_r1, input_r2 = self._resolve_fastq(spec.input, "input")
+
+            paired = sample_r2 is not None
+            if not paired:
+                if spec.mode == TinyMapperMode.hic:
+                    raise RuntimeError(
+                        "HiC mode requires paired-end reads (R2 not found for sample prefix)."
+                    )
+                if spec.do_calibration:
+                    raise RuntimeError(
+                        "Spikein calibration requires paired-end reads "
+                        "(R2 not found for sample prefix)."
+                    )
+                logger.warning(
+                    "Single-end reads detected. "
+                    "Fragment-size filtering (MNase) and spikein calibration "
+                    "are not available in SE mode."
+                )
 
             self._log_startup(sample_r1)
 
@@ -212,8 +238,12 @@ class TinyMapperRunner:
             )
 
     @staticmethod
-    def _resolve_fastq(sample_prefix: str, label: str) -> tuple[Path, Path]:
-        """Return (R1, R2) paths by trying known FASTQ naming patterns."""
+    def _resolve_fastq(sample_prefix: str, label: str) -> tuple[Path, Path | None]:
+        """Return (R1, R2) paths by trying known FASTQ naming patterns.
+
+        Tries paired-end patterns first.  Falls back to single-end patterns
+        (R2 = None) if no paired files are found.
+        """
         prefix = Path(sample_prefix)
         for r1_suf, r2_suf in _FASTQ_PATTERNS:
             r1 = prefix.parent / f"{prefix.name}{r1_suf}"
@@ -243,9 +273,21 @@ class TinyMapperRunner:
             )
             return Path(r1_candidates[0]), Path(r2_candidates[0])
 
+        # Fall back to single-end patterns
+        for suffix in _SINGLE_FASTQ_PATTERNS:
+            r1 = prefix.parent / f"{prefix.name}{suffix}"
+            if r1.exists():
+                logger.warning(
+                    "Found single-end %s FASTQ file: %s (no paired R2 found)",
+                    label,
+                    r1,
+                )
+                return r1, None
+
         raise FileNotFoundError(
             f"{label.capitalize()} FASTQ files not found for prefix: {sample_prefix}\n"
-            f"Files must be named e.g. {prefix.name}_R1.fq.gz & {prefix.name}_R2.fq.gz"
+            f"Files must be named e.g. {prefix.name}_R1.fq.gz & {prefix.name}_R2.fq.gz "
+            f"(paired-end) or {prefix.name}_R1.fq.gz (single-end)"
         )
 
     # ------------------------------------------------------------------ #

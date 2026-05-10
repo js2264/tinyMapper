@@ -25,7 +25,7 @@ def run(
     spec: JobSpec,
     paths: RunPaths,
     sample_r1: Path,
-    sample_r2: Path,
+    sample_r2: Path | None,
     input_r1: Path | None,
     input_r2: Path | None,
     log_file: Path,
@@ -57,15 +57,16 @@ def _align_single(
     spec: JobSpec,
     paths: RunPaths,
     r1: Path,
-    r2: Path,
+    r2: Path | None,
     log_file: Path,
 ) -> None:
-    """bowtie2 in single-end mode: R1 and R2 both passed as -U."""
+    """bowtie2 in single-end mode: R1 (and optionally R2) passed as -U."""
+    reads = f"{r1},{r2}" if r2 is not None else str(r1)
     cmd = (
         f"bowtie2 {_SHOTGUN_ALIGNMENT} "
         f"--threads {spec.threads} "
         f"-x {spec.genome} "
-        f"-U {r1},{r2} "
+        f"-U {reads} "
         f"> {paths.sample_aligned_genome}"
     )
     run_cmd(cmd, log_file, spec.dry_run)
