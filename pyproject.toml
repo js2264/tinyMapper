@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tinymapper"
+version = "0.14.20"
+description = "Map and process ChIP-seq, RNA-seq, ATAC-seq, MNase-seq, HiC and shotgun reads"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0" }
+dependencies = [
+    "pydantic>=2.0",
+    "rich-click>=1.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+tinymapper = "tinymapper.cli:cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tinymapper"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"data/tinyMapper.sh" = "bin/tinyMapper.sh"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",
+    "B008",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=tinymapper --cov-report=term-missing --cov-fail-under=60"

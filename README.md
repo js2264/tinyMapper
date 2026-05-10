@@ -1,220 +1,264 @@
-# tinyMapper 
+# tinyMapper
 
-A minimalist yet versatile workflow to process ChIP-seq (with or without input/spikein), RNA-seq, MNase-seq and ATAC-seq data.  
-`tinyMapper` can also operate as a thin wrapper to process HiC data with `hicstuff` ([Cyril Matthey-Doret et al.](http://doi.org/10.5281/zenodo.4066363)) and `cooler`.  
-Currently, this workflow only works for **paired-end** data. 
+A minimalist yet versatile workflow to process ChIP-seq (with or without
+input/spikein), RNA-seq, MNase-seq, ATAC-seq, Hi-C and shotgun sequencing data.
+Hi-C mode delegates to [`hicstuff`](http://doi.org/10.5281/zenodo.4066363) and
+`cooler`. All modes require **paired-end** data.
 
-**DISCLAIMER:** 
+> **Note:** tinyMapper is a Python package that orchestrates external CLI tools
+> (bowtie2, STAR, samtools, deeptools, macs2, hicstuff). It does **not**
+> re-implement alignment or peak-calling.
 
-- This is by **no means** the "best" or "only" way to process sequencing data. Do not hesitate to give suggestions / feedbacks to improve this workflow.
-- This workflow does **NOT** include any proper QC / validation of the data. At the very least, do run `fastqc` on the sequencing data. Further QC checks are highly recommended, and will vary depending on which assay is performed. 
+**DISCLAIMER:**
 
-### Installation
+- This is by **no means** the "best" or "only" way to process sequencing data.
+  Feedback and suggestions are welcome.
+- This workflow does **NOT** include QC / validation. Run `fastqc` on raw reads
+  at a minimum.
 
-```sh
-DESTINATION=~/bin/
-mkdir ${DESTINATION} 
-cd ${DESTINATION}
-git clone https://github.com/js2264/tinyMapper.git
-micromamba env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
-echo 'export PATH=$PATH:"'${DESTINATION}'/tinyMapper/"' >> ~/.bashrc
-micromamba activate tm
-tinyMapper.sh --help
-```
+---
 
-In more details: 
+## Installation
 
-- Choose a directory to install tinyMapper in (typically, a local `~/bin/` directory is appropriate here): 
+tinyMapper is a Python package. The recommended install creates a micromamba
+environment that bundles the Python package together with all bioinformatics
+tools (bowtie2, STAR, samtools, deeptools, macs2, hicstuff, cooler, bedtools).
 
-```sh
-DESTINATION=~/bin/
-mkdir ${DESTINATION} 
-cd ${DESTINATION}
-```
+### Recommended — full install via micromamba
 
-- Clone tinyMapper's GitHub repository:
+Requires [`micromamba`](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html).
 
 ```sh
 git clone https://github.com/js2264/tinyMapper.git
+micromamba env create -n tinymapper -f tinyMapper/env/tinymapper.yaml
+micromamba activate tinymapper
+tinymapper --help
 ```
 
-- Install tinyMapper requirements using `micromamba` (assumes that `micromamba` is already installed...):
+### Alternative — Python package only
+
+If all bioinformatics tools are already available in your environment:
 
 ```sh
-micromamba env create -n tm -f ${DESTINATION}/tinyMapper/tinymapper.yaml
+pip install git+https://github.com/js2264/tinyMapper.git
+tinymapper --help
 ```
 
-- Add tinyMapper script to your PATH so you can call it by `tinyMapper.sh`, rather than `~/bin/tinyMapper/tinyMapper.sh`:
+---
+
+## Invocation
+
+After activating the environment, there are two equivalent ways to call tinyMapper:
+
+| Command | Description |
+|---------|-------------|
+| `tinymapper --mode ChIP ...` | Primary Python CLI (recommended) |
+| `tinyMapper.sh --mode ChIP ...` | Legacy bash wrapper — forwards all arguments verbatim to `tinymapper` |
+
+Both accept exactly the same flags. `tinyMapper.sh` is kept for compatibility
+with existing Slurm scripts and `autotinymapper`.
+
+---
+
+## Usage
+
+```
+tinymapper [OPTIONS]
+
+Required:
+  -m, --mode      ChIP | MNase | ATAC | RNA | HiC | shotgun
+  -s, --sample    Path prefix to sample FASTQ files
+                  (e.g. ~/reads/JS001 for ~/reads/JS001_R{1,2}.fq.gz)
+  -g, --genome    Path prefix to reference genome index
+                  (e.g. ~/genomes/W303/W303 for bowtie2/STAR index)
+
+Core optional:
+  -o, --output         Output directory (default: results/)
+  -i, --input          (ChIP) Path prefix to input/control sample
+  -c, --calibration    (ChIP) Path prefix to spikein/calibration genome index
+  -t, --threads        Number of CPU threads (default: 8)
+
+Alignment / filtering:
+  -a, --alignment      Extra bowtie2 options (default: '--maxins 1000')
+  -f, --filter         samtools view filter options (default: '-f 2 -q 10')
+  -bl, --blacklist     BED file of blacklist regions
+  --gsize              Effective genome size for macs2 (default: 1.2e7)
+  -d, --duplicates     Keep duplicate reads (flag, default: remove duplicates)
+
+HiC:
+  --hicstuff           Extra arguments for hicstuff (default: '--iterative --duplicates --filter --plot')
+  --restriction        Restriction enzyme(s) (default: 'DpnII,HinfI')
+  --binning            Matrix resolutions, comma-separated (default: '10000,20000,40000,160000,1280000')
+  --balance            Balance Hi-C matrix (flag)
+
+MNase:
+  -M, --MNaseSizes     Fragment size range MIN,MAX (default: '70,250')
+
+Output:
+  -k, --keepIntermediate    Keep intermediate files
+  --dry-run                 Print commands without executing
+  -v, --version             Show version and exit
+  -h, --help                Show this message and exit
+```
+
+FASTQ files must be paired-end. The sample prefix is matched against these
+filename patterns (in order):
+
+- `<SAMPLE>_R1.fq.gz` / `<SAMPLE>_R2.fq.gz` *(preferred)*
+- `<SAMPLE>_R1.fastq.gz` / `<SAMPLE>_R2.fastq.gz`
+- `<SAMPLE>_nxq_R1.fq.gz` / `<SAMPLE>_nxq_R2.fq.gz`
+- `<SAMPLE>.end1.fq.gz` / `<SAMPLE>.end2.fq.gz`
+- `<SAMPLE>.end1.gz` / `<SAMPLE>.end2.gz`
+
+---
+
+## Examples
+
+### ChIP-seq
 
 ```sh
-echo 'export PATH=$PATH:"'${DESTINATION}'/tinyMapper/"' >> ~/.bashrc
+# Sample only (no input, no calibration)
+tinymapper -m ChIP \
+    -s ~/reads/JS001 \
+    -g ~/genomes/R64-1-1/R64-1-1 \
+    -o ~/results
+
+# With input control
+tinymapper -m ChIP \
+    --sample ~/reads/JS001_IP \
+    --input  ~/reads/JS001_input \
+    --genome ~/genomes/R64-1-1/R64-1-1 \
+    --output ~/results
+
+# With input and spikein calibration
+tinymapper -m ChIP \
+    --sample      ~/reads/JS001_IP \
+    --input       ~/reads/JS001_input \
+    --genome      ~/genomes/R64-1-1/R64-1-1 \
+    --calibration ~/genomes/Cglabrata/Cglabrata \
+    --output      ~/results
 ```
 
-- Activate the created `micromamba` environemnt and start using `tinyMapper.sh`: 
+### RNA-seq
 
 ```sh
-micromamba activate tm
-tinyMapper.sh --help
+tinymapper -m RNA -s ~/reads/JS001 -g ~/genomes/W303/W303 -o ~/results
 ```
 
-### Usage 
-
-```
-Usage: ./tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> [ additional arguments ]
-
----------------------- BASIC ARGUMENTS -----------------------------------------
-
-   -m|--mode <MODE>                 Mapping mode (ChIP, MNase, ATAC, RNA, HiC) (Default: ChIP)
-   -s|--sample <SAMPLE>             Path prefix to sample \`<SAMPLE>_R{1,2}.fq.gz\` (e.g. for \`~/reads/JS001_R{1,2}.fq.gz\` files, use \`--sample ~/reads/JS001\`)
-   -g|--genome <GENOME>             Path prefix to reference genome (e.g. for \`~/genome/W303/W303.fa\` fasta file, use \`--genome ~/genome/W303/W303\`)
-   -h|--help                        Print help ('--help' for examples)
-
-
----------------------- ADVANCED ARGUMENTS --------------------------------------
-
-   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fq.gz\`
-   -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration
-   -bl|--blacklist <BED>            Bed file of blacklist regions
-   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)
-                                    Default: '' (no specific options)
-   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)
-                                    Default: '-f 2 -q 10' ('-f 2' to only keep concordant mapped and paired reads, '-q 10' to filter out reads with mapping quality score < 10)
-   -d|--duplicates                  Keep duplicate reads
-   -hic|--hicstuff <OPT>            Additional arguments passed to hicstuff (default: \`--iterative --duplicates --filter --plot\`)
-   -r|--resolutions <#>             Resolution of final matrix file (default: '10000,20000,40000,160000,1280000')
-   -re|--restriction <RE>           Restriction enzyme(s) used for HiC (default: Arima \`--restriction DpnII,HinfI\`)
-   -M|--MNaseSizes <MIN,MAX>        Minimum and maximum fragment size for MNase track (default: \`--MNaseSizes 70,250\`)
-
-
----------------------- OUTPUT ARGUMENTS ----------------------------------------
-
-   -t|--threads <THREADS>           (Optional) Number of threads (Default: 8)
-   -o|--output <OUTPUT>             Path to store results (Default: \`./results/\`)
-   -k|--keepIntermediate            (Optional) Keep intermediate mapping files
-```
-
-Note that fastq files shoud ideally be named following this convention:
-   
-- **Read 1:** \<SAMPLE\>_R1.fq.gz
-- **Read 2:** \<SAMPLE\>_R2.fq.gz
-
-Alternatively, the script will try to find paired-end files named \<SAMPLE\>_R[12].fastq.gz, \<SAMPLE\>_nxq_R[12].fq.gz, \<SAMPLE\>.end1.fq.gz or \<SAMPLE\>.end[12].gz. 
-
-### Using tinyMapper on a cluster (eg Maestro) with Slurm
-
-Make sure tinyMapper script (`tinyMapper.sh`) is available by adding its location to your path (`echo 'export PATH=$PATH:"~/bin/tinyMapper/"' >> ~/.bashrc`).
+### MNase-seq
 
 ```sh
-micromamba activate tm
-sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode <MODE> --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> --threads 8"
-
-# For ChIP processing pipelines
-# - Without input
-sbatch --mem 40G -c 10 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP -g ~/appascratch/genomes/S288c/S288c  --threads 8"
-# - With input and without calibration
-sbatch --mem 40G -c 10 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP.IP -i tests/testChIP.input -g ~/appascratch/genomes/S288c/S288c  --threads 8"
-# - With input and with calibration
-sbatch --mem 40G -c 10 --wrap "tinyMapper.sh -m ChIP -s tests/testChIP.IP -i tests/testChIP.input -g ~/appascratch/genomes/S288c/S288c -c ~/appascratch/genomes/CBS138/CBS138 --threads 8"
-
-# For RNA processing pipelines
-sbatch --mem 40G -c 10 --wrap "tinyMapper.sh -m RNA -s tests/testRNA -g ~/appascratch/genomes/S288c/S288c --threads 8"
-
-# For MNase processing pipelines
-sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode MNase --sample tests/testMNase --genome ~/appascratch/genomes/S288c/S288c --threads 8"
-
-# For Hi-C processing pipelines
-sbatch --mem 40G -c 10 --wrap "tinyMapper.sh --mode HiC --sample tests/testHiC --genome ~/appascratch/genomes/S288c/S288c --threads 8"
+tinymapper -m MNase -s ~/reads/JS001 -g ~/genomes/W303/W303 -o ~/results \
+    --MNaseSizes 70,250
 ```
 
-## Fetching reads prior to mapping
+### ATAC-seq
 
-This is typically done with `rsync`, and will depend on where the data is stored. 
-For instance, if the data is stored on `gaia` server for the Institut Pasteur, 
-you can fetch the data with:  
+```sh
+tinymapper -m ATAC -s ~/reads/JS001 -g ~/genomes/W303/W303 -o ~/results
+```
+
+### Hi-C
+
+```sh
+tinymapper -m HiC \
+    -s ~/reads/JS001 \
+    -g ~/genomes/W303/W303 \
+    -o ~/results \
+    --binning 1000,2000,8000 \
+    --restriction 'DpnII,HinfI'
+```
+
+### Shotgun
+
+```sh
+tinymapper -m shotgun -s ~/reads/JS001 -g ~/genomes/W303/W303 -o ~/results
+```
+
+---
+
+## Output layout
+
+Results are written under `--output` with the following structure:
+
+```
+<output>/
+  bam/genome/          filtered BAM files (genome)
+  bam/spikein/         filtered BAM files (spikein, ChIP only)
+  tracks/              BigWig coverage tracks (CPM, calibrated, fwd/rev for RNA)
+  peaks/               MACS2 peak files (ChIP, ATAC)
+  pairs/               contact pairs (Hi-C only)
+  matrices/            .cool matrices (Hi-C only)
+  logs/                per-run log and command files
+  tmp/                 temporary files (removed on success unless --keepIntermediate)
+```
+
+Files follow the naming convention `<sample>^<operation>^<hash>.<ext>` where
+`<hash>` is a 6-character alphanumeric string unique to each run.
+
+---
+
+## Running on a Slurm cluster (e.g. Maestro)
+
+Activate the environment and submit with `sbatch`:
+
+```sh
+micromamba activate tinymapper
+
+# Generic
+sbatch --mem 40G -c 10 --wrap \
+    "tinymapper --mode ChIP --sample <SAMPLE> --genome <GENOME> --output <OUTPUT> --threads 8"
+
+# ChIP examples
+sbatch --mem 40G -c 10 --wrap \
+    "tinymapper -m ChIP -s ~/reads/JS001_IP -g ~/genomes/S288c/S288c --threads 8"
+sbatch --mem 40G -c 10 --wrap \
+    "tinymapper -m ChIP -s ~/reads/JS001_IP -i ~/reads/JS001_input -g ~/genomes/S288c/S288c --threads 8"
+
+# RNA
+sbatch --mem 40G -c 10 --wrap \
+    "tinymapper -m RNA -s ~/reads/JS001 -g ~/genomes/S288c/S288c --threads 8"
+
+# Hi-C
+sbatch --mem 40G -c 10 --wrap \
+    "tinymapper -m HiC -s ~/reads/JS001 -g ~/genomes/S288c/S288c --threads 8"
+```
+
+`tinyMapper.sh` can be used as a drop-in replacement for the legacy command
+surface (e.g. from `autotinymapper` Slurm scripts):
+
+```sh
+sbatch --mem 40G -c 10 --wrap \
+    "tinyMapper.sh -m ChIP -s ~/reads/JS001_IP -g ~/genomes/S288c/S288c --threads 8"
+```
+
+---
+
+## Fetching reads
 
 ```sh
 rsync -vhrP user@sftpcampus:/pasteur/gaia/projets/p02/Rsg_reads/<FOLDER>/<ID>*.fq.gz .
 ```
 
-### Examples
+---
 
-* **ChIP-seq mode**:
+## Processing details
 
-    - Without input:
+| Step | Detail |
+|------|--------|
+| Alignment | bowtie2 (all modes except RNA → STAR) |
+| BAM filtering | fixmate, markdup, `samtools view -f 2 -q 10` |
+| Duplicate removal | `samtools markdup` (skip with `--duplicates`) |
+| Coverage tracks | `bamCoverage` — CPM; calibrated (ChIP+spikein); fwd/rev (RNA) |
+| Peak calling | `macs2 callpeak` (ChIP, ATAC) |
+| MNase fragment filter | keep fragments 70–250 bp (configurable with `--MNaseSizes`) |
+| Hi-C | `hicstuff pipeline` → `cooler zoomify` → optionally balanced |
+| Logs | `<output>/logs/<sample>^<op>^<hash>-log.txt` and `-commands.txt` |
 
-        ```
-        ./tinyMapper.sh \
-            --mode ChIP \
-            -s ~/testIP \
-            -g ~/genomes/R64-1-1/R64-1-1 \
-            -o ~/results
-        ```
-    
-    - With input:
+---
 
-        ```
-        ./tinyMapper.sh --mode ChIP \
-            --sample ~/testIP \
-            --input ~/testInput \
-            --genome ~/genomes/R64-1-1/R64-1-1 \
-            --output ~/results
-        ```
-    
-    - With input and calibration:
-
-        ```
-        ./tinyMapper.sh --mode ChIP \
-            --sample ~/testIP \
-            --input ~/testInput \
-            --genome ~/genomes/R64-1-1/R64-1-1 \
-            --calibration ~/genomes/Cglabrata/Cglabrata \
-            --output ~/results
-        ```
-    
-* **RNA-seq mode**:
-
-    ```
-    ./tinyMapper.sh --mode RNA -s ./testRNA -g ~/genomes/W303/W303 -o ~/results
-    ```
-
-* **MNase-seq mode**:
-
-    ```
-    ./tinyMapper.sh --mode MNase -s ./testMNase -g ~/genomes/W303/W303 -o ~/results
-    ```
-
-* **HiC mode**:
-
-    ```
-    ./tinyMapper.sh --mode HiC -s ./testHiC -g ~/genomes/W303/W303 -o ~/results --resolutions 1000,2000,8000 --restriction 'DpnII,HinfI'
-    ```
-
-### Processing details
-
-The default steps are: 
-
-- Mapping with bowtie2 (against spikein ref. as well if needed)
-- Filtering `bam` files: 
-    - Fixing mates
-    - Removing duplicates (can be skipped with `--duplicates`)
-    - Removing reads with mapping quality < Q10 (can be adjusted / skipped with `--filter <SAMTOOLS VIEW OPTIONS>`)
-    - Removing unpaired reads (can be adjusted / skipped with `--filter <SAMTOOLS VIEW OPTIONS>`)
-    - For Mase: extra filtering to keep only fragments between 70-250 bp
-    - For Hi-C: process `fastq` files with `hicstuff` and binnify/balance/zoomify with `cooler`
-- Generating tracks: 
-    - CPM (counts per million) tracks
-    - Input and spikein-based calibrated tracks 
-    - For Mase: extra track for nucleosome positions
-    - For RNA-seq: directed tracks (`fwd` and `rev` transcription)
-- Extracting some *very* succint stats on mapping results
-- Keeping everything tidy, organized, documented and reproducible. Notably, when running `tinyMapper.sh`, three files are generated: 
-    - `*-log.txt`: A detailed `log` file
-    - `*-commands.txt`: A list of the actual commands that were executed in the pipeline
-    - `*-script.txt`: A backup copy of the `tinyMapper.sh` entire script as it was at the time of the execution
-
-### Acknowledgments
+## Acknowledgments
 
 - A. Cournac, A. Bignaud & F. Girard for tests.
-- H. Bordelet for sharing her mapping scripts and configuration. 
+- H. Bordelet for sharing her mapping scripts and configuration.
 - L. Meneu for suggestions of improvements in documentation and raising bugs.
-

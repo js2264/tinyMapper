@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-VERSION=0.14.19
+VERSION=0.14.20
 
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
@@ -105,7 +105,7 @@ function usage_extended() {
     echo -e ""
 }
 
-function is_set() { 
+function is_set() {
     test -n "${1}" ; echo $?
 }
 
@@ -152,12 +152,12 @@ function fn_exec {
     YELLOW="\e[33m"
     RESET="\e[0m"
     cmd=`echo "$1" | sed 's,2>>.*,,' `
-    if test `is_set $2` == 0 ; then 
+    if test `is_set $2` == 0 ; then
         echo -e "${BOLD}${BLUE}${date} | ${YELLOW}[EXEC]${RESET} ${cmd}" >> $2
     fi
     eval "$cmd"
-    
-    # check success of eval 
+
+    # check success of eval
     if test $? -ne 0 ; then
         echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${RESET} Command failed: ${cmd}" 2>&1 | tee -a "${LOGFILE}"
         echo -e "${BOLD}${BLUE}${date} | ${RED}[ERR.]${RESET} Aborting now." 2>&1 | tee -a "${LOGFILE}"
@@ -245,97 +245,97 @@ do
         #####
         -m|--mode)
         MODE="${2}"
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -s|--sample)
         SAMPLE="${2}"
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -i|--input)
         INPUT="${2}"
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -g|--genome)
         GENOME_="${2}"
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -c|--calibration)
         SPIKEIN_="${2}"
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -o|--output)
         OUTDIR="${2}"
-        shift 
-        shift 
+        shift
+        shift
         ;;
         #####
         ##### ADVANCED ARGUMENTS
         #####
         -a|--alignment)
         BOWTIEOPTIONS=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -f|--filter)
         FILTEROPTIONS=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -bl|--blacklist)
         BLACKLISTBEDFILE=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -gs|--gsize)
         GSIZE=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -hic|--hicstuff)
         HICSTUFFOPTIONS=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -re|--restriction)
         RE=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -b|--binning)
         HICREZ=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -ba|--balance)
         BALANCEOPTIONS=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -M|--MNaseSizes)
         MNASESIZES=${2}
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -d|--duplicates)
         KEEPDUPLICATES=1
-        shift 
+        shift
         ;;
         #####
         ##### OPTIONAL ARGUMENTS
         #####
         -t|--threads)
         CPU="${2}"
-        shift 
-        shift 
+        shift
+        shift
         ;;
         -k|--keepIntermediate)
         KEEPFILES=0
-        shift 
+        shift
         ;;
         -h)
         usage && exit 0
@@ -425,7 +425,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
     SAMPLE_SPIKEINSCALED_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.calibrated.bw
 fi
 
-if test "${MODE}" == MNase ; then 
+if test "${MODE}" == MNase ; then
     SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".bam
     SAMPLE_ALIGNED_GENOME_FILTERED_READSIZE40="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^40bp^"${HASH}".bam
     SAMPLE_READSIZE_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}"."${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}".CPM.bw
@@ -433,14 +433,14 @@ if test "${MODE}" == MNase ; then
     SAMPLE_NUCCOV_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^filtered^"${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}"^"${HASH}".nuccov.CPM.bw
 fi
 
-if test "${MODE}" == RNA ; then 
+if test "${MODE}" == RNA ; then
     SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".unstranded.CPM.bw
     SAMPLE_TRACK_FWD="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.CPM.bw
     SAMPLE_TRACK_REV="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.CPM.bw
 fi
 
 # - HiC-related file names
-if test "${MODE}" == HiC ; then 
+if test "${MODE}" == HiC ; then
     SAMPLE_ALIGNED_GENOME_FWD="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".fwd.bam
     SAMPLE_ALIGNED_GENOME_REV="${OUTDIR}"/bam/genome/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".rev.bam
     SAMPLE_COOL="${OUTDIR}"/matrices/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".cool
@@ -520,7 +520,7 @@ if test `is_set "${SAMPLE_BASE}"` == 1 ; then
     exit 1
 fi
 
-# Check that sample files exist. Try different patterns: 
+# Check that sample files exist. Try different patterns:
 #       "${SAMPLE}_R1.fq.gz" [DEFAULT]
 #       "${SAMPLE}_R1.fastq.gz"
 #       "${SAMPLE}_nvq_R1.fq.gz"
@@ -532,39 +532,39 @@ if test ! -f "${SAMPLE_R1}" || test ! -f "${SAMPLE_R2}" ; then
     SAMPLE_R1="${SAMPLE}_R1.fastq.gz"
     SAMPLE_R2="${SAMPLE}_R2.fastq.gz"
     if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
-        fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
-        fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+        fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}"
+        fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
     else
         SAMPLE_R1="${SAMPLE}_nxq_R1.fq.gz"
         SAMPLE_R2="${SAMPLE}_nxq_R2.fq.gz"
         if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
-            fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
-            fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+            fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}"
+            fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
         else
             SAMPLE_R1="${SAMPLE}_nvq_R1.fq.gz"
             SAMPLE_R2="${SAMPLE}_nvq_R2.fq.gz"
             if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
-                fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}"
+                fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
             else
                 SAMPLE_R1="${SAMPLE}.end1.fq.gz"
                 SAMPLE_R2="${SAMPLE}.end2.fq.gz"
                 if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
-                    fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                    fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                    fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}"
+                    fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
                 else
                     SAMPLE_R1="${SAMPLE}.end1.gz"
                     SAMPLE_R2="${SAMPLE}.end2.gz"
                     if test -f "${SAMPLE_R1}" && test -f "${SAMPLE_R2}" ; then
-                        fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                        fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                        fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}"
+                        fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
                     else
                         SAMPLE_R1=`find $SAMPLE_DIR -name $SAMPLE_BASE* | grep "_S[0-9]\{1,2\}_R1"`
                         SAMPLE_R2=`find $SAMPLE_DIR -name $SAMPLE_BASE* | grep "_S[0-9]\{1,2\}_R2"`
                         if [[ -f "${SAMPLE_R1}" && -f "${SAMPLE_R2}" && "${SAMPLE_R1}" != *[[:space:]]* && "${SAMPLE_R2}" != *[[:space:]]* ]] ; then
-                            fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                            fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
-                        else 
+                            fn_warning "Sample files found here: ${SAMPLE_R1} & ${SAMPLE_R2}" 2>&1 | tee -a "${LOGFILE}"
+                            fn_warning "Renaming '\${SAMPLE_R1}' & '\${SAMPLE_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
+                        else
                             fn_error "Sample files not found. Check sample directory: ${SAMPLE_DIR}/." 2>&1 | tee -a "${LOGFILE}"
                             fn_error "Files *must* be named as follows: ${SAMPLE_BASE}_R1.fq.gz & ${SAMPLE_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
                             fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
@@ -603,7 +603,7 @@ if test ! -f "${GENOME_SIZES}" ; then
     fn_warning "Success. Continuing..." 2>&1 | tee -a "${LOGFILE}"
 fi
 
-# If providing input, check that the input files exist. Try different patterns: 
+# If providing input, check that the input files exist. Try different patterns:
 #       "${INPUT}_R1.fq.gz" [DEFAULT]
 #       "${INPUT}_R1.fastq.gz"
 #       "${INPUT}_nvq_R1.fq.gz"
@@ -615,39 +615,39 @@ if test "${DO_INPUT}" == 0 ; then
         INPUT_R1="${INPUT}_R1.fastq.gz"
         INPUT_R2="${INPUT}_R2.fastq.gz"
         if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
-            fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
-            fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+            fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}"
+            fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
         else
             INPUT_R1="${INPUT}_nxq_R1.fq.gz"
             INPUT_R2="${INPUT}_nxq_R2.fq.gz"
             if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
-                fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}"
+                fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
             else
                 INPUT_R1="${INPUT}_nvq_R1.fq.gz"
                 INPUT_R2="${INPUT}_nvq_R2.fq.gz"
                 if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
-                    fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                    fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                    fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}"
+                    fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
                 else
                     INPUT_R1="${INPUT}.end1.fq.gz"
                     INPUT_R2="${INPUT}.end2.fq.gz"
                     if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
-                        fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                        fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                        fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}"
+                        fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
                     else
                         INPUT_R1="${INPUT}.end1.gz"
                         INPUT_R2="${INPUT}.end2.gz"
                         if test -f "${INPUT_R1}" && test -f "${INPUT_R2}" ; then
-                            fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                            fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
+                            fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}"
+                            fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
                         else
                             INPUT_R1=`find $INPUT_DIR -name $INPUT_BASE* | grep "_S[0-9]\{1,2\}_R1"`
                             INPUT_R2=`find $INPUT_DIR -name $INPUT_BASE* | grep "_S[0-9]\{1,2\}_R2"`
                             if [[ -f "${INPUT_R1}" && -f "${INPUT_R2}" && "${INPUT_R1}" != *[[:space:]]* && "${INPUT_R2}" != *[[:space:]]* ]]; then
-                                fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}" 
-                                fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}" 
-                            else 
+                                fn_warning "Input files found here: ${INPUT_R1} & ${INPUT_R2}" 2>&1 | tee -a "${LOGFILE}"
+                                fn_warning "Renaming '\${INPUT_R1}' & '\${INPUT_R2}' variables" 2>&1 | tee -a "${LOGFILE}"
+                            else
                                 fn_error "Input files are missing. Check input directory: ${INPUT_DIR}/." 2>&1 | tee -a "${LOGFILE}"
                                 fn_error "Files *must* be named as follows: ${INPUT_BASE}_R1.fq.gz & ${INPUT_BASE}_R2.fq.gz" 2>&1 | tee -a "${LOGFILE}"
                                 fn_error "Aborting now." 2>&1 | tee -a "${LOGFILE}"
@@ -673,7 +673,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
 fi
 
 # If provided reference genome is not indexed abort
-if test "${MODE}" == RNA ; then 
+if test "${MODE}" == RNA ; then
     if test ! -d "${GENOME_BASE}"/STAR/ ; then
         fn_error "Genome STAR index folder is missing. Please run the following command first:" 2>&1 | tee -a "${LOGFILE}"
         echo -e "STAR --runMode genomeGenerate --runThreadN ${CPU} --genomeFastaFiles ${GENOME_BASE}.fa --genomeDir ${GENOME_BASE}/STAR/ <[ --sjdbGTFfile ... --sjdbOverhang ... ]>" 2>&1 | tee -a "${LOGFILE}"
@@ -808,7 +808,7 @@ fn_log "GENOME      : ${GENOME}" 2>&1 | tee -a "${LOGFILE}"
 if test "${MODE}" == ChIP ; then
     if test "${DO_INPUT}" == 0 ; then
         fn_log "INPUT       : ${INPUT}" 2>&1 | tee -a "${LOGFILE}"
-    else 
+    else
         fn_warning "Input reads not provided. Processing without input." 2>&1 | tee -a "${LOGFILE}"
     fi
     if test "${DO_CALIBRATION}" == 0 ; then
@@ -822,7 +822,7 @@ if test "${MODE}" == HiC ; then
     fn_log "Restriction enz. : ${RE}" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Binning          : ${HICREZ}" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Balancing opt.   : ${BALANCEOPTIONS}" 2>&1 | tee -a "${LOGFILE}"
-else 
+else
     fn_log "Keep dups.  : `if test ${KEEPDUPLICATES} == 1 ; then echo yes ; else echo no ; fi`" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Align. opt. : ${BOWTIEOPTIONS}" 2>&1 | tee -a "${LOGFILE}"
     fn_log "Filt. opt.  : ${FILTEROPTIONS}" 2>&1 | tee -a "${LOGFILE}"
@@ -866,7 +866,7 @@ if test "${MODE}" == HiC ; then
     cp "${GENOME_BASE}".4.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.4.bt2
     cp "${GENOME_BASE}".rev.1.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.rev.1.bt2
     cp "${GENOME_BASE}".rev.2.bt2 "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".genome.fasta.rev.2.bt2
-    
+
     fn_log "Processing sample reads with hicstuff" 2>&1 | tee -a "${LOGFILE}"
     cmd="hicstuff pipeline \
         --threads "${CPU}" \
@@ -882,11 +882,11 @@ if test "${MODE}" == HiC ; then
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     ## Generate distance law files
-    if [[ "${HICSTUFFOPTIONS}" =~ --duplicates || "${HICSTUFFOPTIONS}" =~ -d ]] ; then 
+    if [[ "${HICSTUFFOPTIONS}" =~ --duplicates || "${HICSTUFFOPTIONS}" =~ -d ]] ; then
         FILE="${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs.gz
-    elif [[ "${HICSTUFFOPTIONS}" =~ --filter || "${HICSTUFFOPTIONS}" =~ -f ]] ; then 
+    elif [[ "${HICSTUFFOPTIONS}" =~ --filter || "${HICSTUFFOPTIONS}" =~ -f ]] ; then
         FILE="${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs.gz
-    else 
+    else
         FILE="${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs.gz
     fi
     fn_log "Generating distance law file" 2>&1 | tee -a "${LOGFILE}"
@@ -929,7 +929,7 @@ if test "${MODE}" == HiC ; then
 ## ------------------- MAPPING --------------------------------------
 ## ------------------------------------------------------------------
 
-else 
+else
 
 if test "${MODE}" == RNA ; then
     fn_log "Mapping sample reads to reference genome with STAR" 2>&1 | tee -a "${LOGFILE}"
@@ -953,9 +953,9 @@ elif test "${MODE}" == shotgun ; then
         -x "${GENOME_BASE}" \
         -U "${SAMPLE_R1}","${SAMPLE_R2}" \
         --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
-        > "${SAMPLE_ALIGNED_GENOME}"" 
+        > "${SAMPLE_ALIGNED_GENOME}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
-else 
+else
     fn_log "Mapping sample reads to reference genome with bowtie2" 2>&1 | tee -a "${LOGFILE}"
     cmd="bowtie2 ${BOWTIEOPTIONS} \
         --threads "${CPU}" \
@@ -963,7 +963,7 @@ else
         -1 "${SAMPLE_R1}" \
         -2 "${SAMPLE_R2}" \
         --un-conc-gz "${SAMPLE_NON_ALIGNED_GENOME}".gz \
-        > "${SAMPLE_ALIGNED_GENOME}"" 
+        > "${SAMPLE_ALIGNED_GENOME}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 fi
 
@@ -977,7 +977,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --un-conc-gz "${SAMPLE_NON_ALIGNED_CALIBRATION}".gz \
         > "${SAMPLE_ALIGNED_CALIBRATION}""
     fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
-    
+
     fn_log "Mapping sample reads non-mapped on spikein genome to reference genome" 2>&1 | tee -a "${LOGFILE}"
     cmd="bowtie2 ${BOWTIEOPTIONS} \
         --threads "${CPU}" \
@@ -1131,7 +1131,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
 
 fi
 
-if test "${MODE}" == MNase ; then 
+if test "${MODE}" == MNase ; then
     fn_log "Further filtering sample bam file of reads mapped to reference genome for fragment size ("${MNASE_MINSIZE}"-"${MNASE_MAXSIZE}" bp)" 2>&1 | tee -a "${LOGFILE}"
     cmd="samtools view -@ "${CPU}" -h "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
         | mawk '/^@/ || (sqrt((\$9^2)) > "${MNASE_MINSIZE}" && sqrt((\$9^2)) < "${MNASE_MAXSIZE}")' \
@@ -1303,7 +1303,7 @@ if test "${DO_CALIBRATION}" == 0 ; then
 
 fi
 
-if test "${MODE}" == MNase ; then 
+if test "${MODE}" == MNase ; then
 
     fn_log "Generating CPM track for ${SAMPLE_BASE} filtered for reads >${MNASE_MINSIZE}bp & <${MNASE_MAXSIZE}bp" 2>&1 | tee -a "${LOGFILE}"
     cmd="bamCoverage \
@@ -1349,7 +1349,7 @@ if test "${MODE}" == MNase ; then
 
 fi
 
-if test "${MODE}" == RNA ; then 
+if test "${MODE}" == RNA ; then
 
     fn_log "Generating CPM track for ${SAMPLE_BASE}" 2>&1 | tee -a "${LOGFILE}"
     cmd="bamCoverage \
@@ -1412,7 +1412,7 @@ if test "${DO_PEAKS}" == 0 ; then
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
     else
-    
+
         if test "${DO_CALIBRATION}" == 1 ; then
 
             cmd="macs2 callpeak \
@@ -1435,13 +1435,13 @@ if test "${DO_PEAKS}" == 0 ; then
                 --name "${SAMPLE_BASE}_vs-${INPUT_BASE}_genome-${GENOME}_${HASH}""
             fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
-        fi 
+        fi
 
-    fi 
+    fi
 
 fi
 
-fi 
+fi
 
 # ------------------------------------- Exit HiC if...else statement
 
@@ -1455,10 +1455,10 @@ echo `fastqfastcnt "${SAMPLE_R1}" frags.` >> "${LOGFILE}"
 echo -e "---" >> "${LOGFILE}"
 
 if test "${DO_CALIBRATION}" == 0 ; then
-    files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" 
+    files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}"
 elif test "${MODE}" == HiC ; then
     files="${OUTDIR}/tmp/"${HASH}"/${SAMPLE_BASE}^"${HASH}".for.bam ${OUTDIR}/tmp/"${HASH}"/${SAMPLE_BASE}^"${HASH}".rev.bam"
-else 
+else
     files="${SAMPLE_ALIGNED_GENOME} ${SAMPLE_ALIGNED_GENOME_FILTERED}"
 fi
 
@@ -1493,19 +1493,19 @@ if test "${MODE}" == HiC ; then
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".hicstuff*
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv
     rm --force "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".chr.tsv_filtered
-    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam 
-    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam 
+    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bam
+    rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".sorted.bam
     rm "${OUTDIR}"/tmp/"${HASH}"/"${SAMPLE_BASE}"^"${HASH}".bg
     # mv
     mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}"_"${BASE_REZ}".cool "${SAMPLE_COOL}" 2>/dev/null || true
     mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".mcool "${SAMPLE_MCOOL}" 2>/dev/null || true
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".for.bam "${SAMPLE_ALIGNED_GENOME_FWD}" 2>/dev/null || true
     mv "${OUTDIR}"/tmp/"${SAMPLE_BASE}"^"${HASH}".rev.bam "${SAMPLE_ALIGNED_GENOME_REV}" 2>/dev/null || true
-    if [[ "${HICSTUFFOPTIONS}" =~ --duplicates || "${HICSTUFFOPTIONS}" =~ -d ]] ; then 
+    if [[ "${HICSTUFFOPTIONS}" =~ --duplicates || "${HICSTUFFOPTIONS}" =~ -d ]] ; then
         mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_pcrfree.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_PCRFREE}".gz
-    elif [[ "${HICSTUFFOPTIONS}" =~ --filter || "${HICSTUFFOPTIONS}" =~ -f ]] ; then 
+    elif [[ "${HICSTUFFOPTIONS}" =~ --filter || "${HICSTUFFOPTIONS}" =~ -f ]] ; then
         mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx_filtered.pairs.gz "${SAMPLE_PAIRS_VALID_IDX_FILTERED}".gz
-    else 
+    else
         mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".valid_idx.pairs.gz "${SAMPLE_PAIRS_VALID_IDX}".gz
     fi
     mv "${OUTDIR}"/"${SAMPLE_BASE}"^"${HASH}".frags.tsv "${SAMPLE_PAIRS_FRAGS}" 2>/dev/null || true

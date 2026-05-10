@@ -1,0 +1,1 @@
+# tinymapper tests

@@ -1,1 +1,0 @@
-tinyMapper_0.10.0.sh
