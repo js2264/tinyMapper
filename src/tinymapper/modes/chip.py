@@ -1,4 +1,4 @@
-"""ChIP-seq mode: bowtie2 → samtools fixmate/markdup/filter → bamCoverage → macs2.
+"""ChIP-seq mode: bowtie2 → samtools fixmate/markdup/filter → bamCoverage → macs3.
 
 Supports paired-end and single-end reads.
 Paired-end configurations:

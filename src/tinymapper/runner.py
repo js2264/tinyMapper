@@ -195,9 +195,9 @@ class TinyMapperRunner:
                     f"{tool} not found in PATH. "
                     f"Install it via: micromamba install -c bioconda {tool}"
                 )
-        if spec.do_peaks and not shutil.which("macs2"):
+        if spec.do_peaks and not shutil.which("macs3"):
             raise RuntimeError(
-                "macs2 not found in PATH. Install it via: micromamba install -c bioconda macs2"
+                "macs3 not found in PATH. Install it via: micromamba install -c bioconda macs3"
             )
 
     def _validate_genome_index(self, is_spikein: bool = False) -> None:

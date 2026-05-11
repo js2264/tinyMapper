@@ -11,7 +11,7 @@ For single-end MNase, fragment-size filtering is skipped and only a standard
 CPM track is produced.
 
 > **Note:** tinyMapper is a Python package that orchestrates external CLI tools
-> (bowtie2, STAR, samtools, deeptools, macs2, hicstuff). It does **not**
+> (bowtie2, STAR, samtools, deeptools, macs3, hicstuff). It does **not**
 > re-implement alignment or peak-calling.
 
 **DISCLAIMER:**
@@ -27,7 +27,7 @@ CPM track is produced.
 
 tinyMapper is a Python package. The recommended install creates a micromamba
 environment that bundles the Python package together with all bioinformatics
-tools (bowtie2, STAR, samtools, deeptools, macs2, hicstuff, cooler, bedtools).
+tools (bowtie2, STAR, samtools, deeptools, macs3, hicstuff, cooler, bedtools).
 
 ### Recommended — full install via micromamba
 
@@ -72,9 +72,9 @@ with existing Slurm scripts and `autotinymapper`.
 
  tinyMapper — map and process sequencing reads.
  Modes:
-   ChIP    — ChIP-seq (bowtie2 → samtools → bamCoverage → macs2)
+   ChIP    — ChIP-seq (bowtie2 → samtools → bamCoverage → macs3)
    RNA     — RNA-seq  (STAR → samtools → bamCoverage × 3)
-   ATAC    — ATAC-seq (bowtie2 → samtools → bamCoverage → macs2)
+   ATAC    — ATAC-seq (bowtie2 → samtools → bamCoverage → macs3)
    MNase   — MNase-seq (bowtie2 → samtools → size filter → 3 tracks)
    HiC     — Hi-C     (hicstuff pipeline → cooler → mcool)
    shotgun — Shotgun  (bowtie2 single-end → samtools → bamCoverage)
@@ -100,7 +100,7 @@ with existing Slurm scripts and `autotinymapper`.
 │ --alignment   -a   TEXT  Extra options passed to bowtie2 (use single quotes). [default: --maxins 1000]                                                         │
 │ --filter      -f   TEXT  Filtering options for samtools view (use single quotes). [default: -f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10]                         │
 │ --blacklist   -bl  TEXT  BED file of blacklist regions for bamCoverage.                                                                                        │
-│ --gsize       -gs  TEXT  Effective genome size for macs2 peak calling. [default: 13000000]                                                                     │
+│ --gsize       -gs  TEXT  Effective genome size for macs3 peak calling. [default: 13000000]                                                                     │
 │ --duplicates  -d         Keep duplicate reads (default: remove duplicates).                                                                                    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ HiC ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -223,7 +223,7 @@ Results are written under `--output` with the following structure:
   bam/genome/          filtered BAM files (genome)
   bam/spikein/         filtered BAM files (spikein, ChIP only)
   tracks/              BigWig coverage tracks (CPM, calibrated, fwd/rev for RNA)
-  peaks/               MACS2 peak files (ChIP, ATAC)
+  peaks/               MACS3 peak files (ChIP, ATAC)
   pairs/               contact pairs (Hi-C only)
   matrices/            .cool matrices (Hi-C only)
   logs/                per-run log and command files

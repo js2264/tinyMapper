@@ -1,7 +1,7 @@
-"""ATAC-seq mode: bowtie2 → samtools → bamCoverage → macs2.
+"""ATAC-seq mode: bowtie2 → samtools → bamCoverage → macs3.
 
 ATAC-seq uses the same pipeline as ChIP-seq (bowtie2, duplicate marking,
-CPM tracks, macs2 peaks) and supports both paired-end and single-end reads.
+CPM tracks, macs3 peaks) and supports both paired-end and single-end reads.
 Input and calibration controls are not used in ATAC-seq.
 """
 

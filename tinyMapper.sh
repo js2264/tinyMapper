@@ -31,7 +31,7 @@ function usage() {
     echo -e "   -i|--input <INPUT>               (Optional) Path prefix to input \`<INPUT>_R{1,2}.fq.gz\`"
     echo -e "   -c|--calibration <CALIBRATION>   (Optional) Path prefix to genome used for calibration"
     echo -e "   -bl|--blacklist <BED>            Bed file of blacklist regions"
-    echo -e "   -gs|--gsize <GSIZE>              Genome size for macs2 peak calling (default: 13000000 for S. cerevisiae)"
+    echo -e "   -gs|--gsize <GSIZE>              Genome size for macs3 peak calling (default: 13000000 for S. cerevisiae)"
     echo -e "   -a|--alignment <ALIGN.>          Alignment options for \`bowtie2\` (between single quotes)"
     echo -e "                                    Default: '' (no specific options)"
     echo -e "   -f|--filter <FILTER>             Filtering options for \`samtools view\` (between single quotes)"
@@ -95,7 +95,7 @@ function usage_extended() {
     echo -e "   STAR"
     echo -e "   samtools"
     echo -e "   deeptools"
-    echo -e "   macs2 (for ChIP/ATAC)"
+    echo -e "   macs3 (for ChIP/ATAC)"
     echo -e "   hicstuff (for HiC)"
     echo -e "   cooler (for HiC)"
     echo -e ""
@@ -723,7 +723,7 @@ do
 done
 
 if test "${DO_PEAKS}" == 0 ; then
-    util=macs2
+    util=macs3
     if test -z `command -v "${util}"` ; then
         fn_error "${util} does not seem to be installed or loaded. Most likely, it can be installed as follows:" 2>&1 | tee -a "${LOGFILE}"
         echo -e "conda install -c bioconda ${util}" 2>&1 | tee -a "${LOGFILE}"
@@ -841,7 +841,7 @@ if test "${MODE}" == RNA ; then
 fi
 fn_log "samtools    : `type -P samtools` (version: `samtools --version | head -n1 | sed 's,.* ,,'`)" 2>&1 | tee -a "${LOGFILE}"
 fn_log "deeptools   : `type -P deeptools` (version: `deeptools --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
-fn_log "macs2       : `type -P macs2` (version: `macs2 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
+fn_log "macs3       : `type -P macs3` (version: `macs3 --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
 if test "${MODE}" == HiC ; then
     fn_log "hicstuff    : `type -P hicstuff` (version: `hicstuff --version | head -n1 | sed 's,.* ,,g'`)" 2>&1 | tee -a "${LOGFILE}"
     if ! test -z `command -v juicer_tools` ; then
@@ -1403,7 +1403,7 @@ if test "${DO_PEAKS}" == 0 ; then
 
     if test "${DO_INPUT}" == 1 ; then
 
-        cmd="macs2 callpeak \
+        cmd="macs3 callpeak \
             -t "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
             --format BAMPE \
             --gsize "${GSIZE}" \
@@ -1415,7 +1415,7 @@ if test "${DO_PEAKS}" == 0 ; then
 
         if test "${DO_CALIBRATION}" == 1 ; then
 
-            cmd="macs2 callpeak \
+            cmd="macs3 callpeak \
                 -t "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
                 -c "${INPUT_ALIGNED_GENOME_FILTERED}" \
                 --format BAMPE \
@@ -1426,7 +1426,7 @@ if test "${DO_PEAKS}" == 0 ; then
 
         else
 
-            cmd="macs2 callpeak \
+            cmd="macs3 callpeak \
                 -t "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
                 -c "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
                 --format BAMPE \

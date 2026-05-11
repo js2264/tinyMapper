@@ -226,11 +226,11 @@ def call_peaks(
     input_bam: Path | None = None,
     paired: bool = True,
 ) -> None:
-    """macs2 callpeak.  Uses BAMPE for paired-end data, BAM for single-end."""
+    """macs3 callpeak.  Uses BAMPE for paired-end data, BAM for single-end."""
     ctrl = f"-c {input_bam} " if input_bam else ""
     fmt = "BAMPE" if paired else "BAM"
     cmd = (
-        f"macs2 callpeak "
+        f"macs3 callpeak "
         f"-t {sample_bam} "
         f"{ctrl}"
         f"--format {fmt} "

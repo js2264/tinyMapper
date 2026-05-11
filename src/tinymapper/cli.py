@@ -153,7 +153,7 @@ click.rich_click.OPTION_GROUPS = {
     "--gsize",
     default="13000000",
     show_default=True,
-    help="Effective genome size for macs2 peak calling.",
+    help="Effective genome size for macs3 peak calling.",
 )
 @click.option(
     "-d",
@@ -243,9 +243,9 @@ def cli(
 
     \b
     Modes:
-      ChIP    — ChIP-seq (bowtie2 → samtools → bamCoverage → macs2)
+      ChIP    — ChIP-seq (bowtie2 → samtools → bamCoverage → macs3)
       RNA     — RNA-seq  (STAR → samtools → bamCoverage × 3)
-      ATAC    — ATAC-seq (bowtie2 → samtools → bamCoverage → macs2)
+      ATAC    — ATAC-seq (bowtie2 → samtools → bamCoverage → macs3)
       MNase   — MNase-seq (bowtie2 → samtools → size filter → 3 tracks)
       HiC     — Hi-C     (hicstuff pipeline → cooler → mcool)
       shotgun — Shotgun  (bowtie2 single-end → samtools → bamCoverage)

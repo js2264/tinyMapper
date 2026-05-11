@@ -11,7 +11,7 @@ dependencies:
   - samtools
   # Coverage tracks and peak calling
   - deeptools
-  - macs2
+  - macs3
   # Hi-C pipeline
   - hicstuff>=3.2.4
   - cooler
