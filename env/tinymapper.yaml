@@ -1,0 +1,28 @@
+name: tinymapper
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  # Alignment
+  - bowtie2
+  - star
+  # SAM/BAM processing
+  - samtools
+  # Coverage tracks and peak calling
+  - deeptools
+  - macs2
+  # Hi-C pipeline
+  - hicstuff>=3.2.4
+  - cooler
+  # Genome tools
+  - bedtools
+  - ucsc-bedGraphToBigWig
+  # Utilities
+  - mawk
+  - tree
+  - java-jdk
+  # Python package itself
+  - pip
+  - pip:
+    - git+https://github.com/js2264/tinyMapper.git
