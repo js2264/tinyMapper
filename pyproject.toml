@@ -27,8 +27,8 @@ tinymapper = "tinymapper.cli:cli"
 [tool.hatch.build.targets.wheel]
 packages = ["src/tinymapper"]
 
-[tool.hatch.build.targets.wheel.shared-data]
-"data/tinyMapper.sh" = "bin/tinyMapper.sh"
+[tool.hatch.build.targets.wheel.shared-scripts]
+"data/tinyMapper.sh" = "tinyMapper.sh"
 
 [tool.ruff]
 line-length = 100

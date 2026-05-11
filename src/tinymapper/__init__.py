@@ -1,3 +1,8 @@
 """tinyMapper — map and process ChIP / RNA / ATAC / MNase / HiC / shotgun reads."""
 
-__version__ = "0.14.21"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("tinymapper")
+except PackageNotFoundError:
+    __version__ = "unknown"

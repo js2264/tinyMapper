@@ -9,14 +9,15 @@ import re
 import shutil
 import subprocess
 from datetime import datetime
+from importlib.metadata import version
 from pathlib import Path
 
 from tinymapper._paths import RunPaths
 from tinymapper.models import JobSpec, TinyMapperMode
 
-logger = logging.getLogger(__name__)
+VERSION = version("tinymapper")
 
-VERSION = "0.14.19"
+logger = logging.getLogger(__name__)
 
 _FASTQ_PATTERNS = [
     ("_R1.fq.gz", "_R2.fq.gz"),

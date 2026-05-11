@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from click.testing import CliRunner
 
+from tinymapper import __version__ as VERSION
 from tinymapper.cli import cli
 
 
@@ -31,13 +32,13 @@ def test_short_help(runner):
 def test_version(runner):
     result = runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert "0.14.19" in result.output
+    assert VERSION in result.output
 
 
 def test_short_version(runner):
     result = runner.invoke(cli, ["-v"])
     assert result.exit_code == 0
-    assert "0.14.19" in result.output
+    assert VERSION in result.output
 
 
 def test_missing_required_mode(runner):

@@ -1,8 +1,8 @@
 #!/bin/bash
 set -eu
 
-VERSION=0.14.20
-
+# version is recovered from pyproject.toml
+VERSION=`grep -oP '^version = "\K[^"]+' pyproject.toml`
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
 
