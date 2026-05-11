@@ -1,6 +1,6 @@
-"""ATAC-seq mode: bowtie2 → samtools → bamCoverage → macs3.
+"""ATAC-seq mode: bwa-mem2 → samtools → bamCoverage → macs3.
 
-ATAC-seq uses the same pipeline as ChIP-seq (bowtie2, duplicate marking,
+ATAC-seq uses the same pipeline as ChIP-seq (bwa-mem2, duplicate marking,
 CPM tracks, macs3 peaks) and supports both paired-end and single-end reads.
 Input and calibration controls are not used in ATAC-seq.
 """
@@ -11,8 +11,8 @@ import logging
 from pathlib import Path
 
 from tinymapper._common import (
-    align_bowtie2_paired,
-    align_bowtie2_se,
+    align_bwamem2_paired,
+    align_bwamem2_se,
     bam_coverage_cpm,
     call_peaks,
     filter_bam_paired,
@@ -36,9 +36,9 @@ def run(
     """Execute the ATAC-seq pipeline (paired-end or single-end)."""
     paired = sample_r2 is not None
 
-    logger.info("Mapping sample reads to reference genome with bowtie2")
+    logger.info("Mapping sample reads to reference genome with bwa-mem2")
     if paired:
-        align_bowtie2_paired(
+        align_bwamem2_paired(
             spec,
             spec.genome,
             sample_r1,
@@ -48,7 +48,7 @@ def run(
             log_file,
         )
     else:
-        align_bowtie2_se(
+        align_bwamem2_se(
             spec,
             spec.genome,
             sample_r1,

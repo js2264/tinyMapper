@@ -1,4 +1,4 @@
-"""ChIP-seq mode: bowtie2 → samtools fixmate/markdup/filter → bamCoverage → macs3.
+"""ChIP-seq mode: bwa-mem2 → samtools fixmate/markdup/filter → bamCoverage → macs3.
 
 Supports paired-end and single-end reads.
 Paired-end configurations:
@@ -17,8 +17,8 @@ import logging
 from pathlib import Path
 
 from tinymapper._common import (
-    align_bowtie2_paired,
-    align_bowtie2_se,
+    align_bwamem2_paired,
+    align_bwamem2_se,
     bam_compare,
     bam_coverage_cpm,
     bam_coverage_scaled,
@@ -46,9 +46,9 @@ def run(
     paired = sample_r2 is not None
 
     # 1. Alignment
-    logger.info("Mapping sample reads to reference genome with bowtie2")
+    logger.info("Mapping sample reads to reference genome with bwa-mem2")
     if paired:
-        align_bowtie2_paired(
+        align_bwamem2_paired(
             spec,
             spec.genome,
             sample_r1,
@@ -58,7 +58,7 @@ def run(
             log_file,
         )
     else:
-        align_bowtie2_se(
+        align_bwamem2_se(
             spec,
             spec.genome,
             sample_r1,
@@ -67,9 +67,9 @@ def run(
         )
 
     if spec.do_input:
-        logger.info("Mapping input reads to reference genome with bowtie2")
+        logger.info("Mapping input reads to reference genome with bwa-mem2")
         if paired:
-            align_bowtie2_paired(
+            align_bwamem2_paired(
                 spec,
                 spec.genome,
                 input_r1,
@@ -79,7 +79,7 @@ def run(
                 log_file,
             )
         else:
-            align_bowtie2_se(
+            align_bwamem2_se(
                 spec,
                 spec.genome,
                 input_r1,  # type: ignore[arg-type]
@@ -124,7 +124,7 @@ def _align_spikein(
     genome = spec.genome
 
     logger.info("Mapping sample reads to spikein genome")
-    align_bowtie2_paired(
+    align_bwamem2_paired(
         spec,
         spikein,
         sample_r1,
@@ -135,7 +135,7 @@ def _align_spikein(
     )
 
     logger.info("Mapping sample reads (not on spikein) to reference genome")
-    align_bowtie2_paired(
+    align_bwamem2_paired(
         spec,
         genome,
         Path(f"{paths.sample_non_aligned_calibration}.1.gz"),
@@ -146,7 +146,7 @@ def _align_spikein(
     )
 
     logger.info("Mapping sample reads (not on genome) to spikein genome")
-    align_bowtie2_paired(
+    align_bwamem2_paired(
         spec,
         spikein,
         Path(f"{paths.sample_non_aligned_genome}.1.gz"),
@@ -157,7 +157,7 @@ def _align_spikein(
     )
 
     logger.info("Mapping input reads to spikein genome")
-    align_bowtie2_paired(
+    align_bwamem2_paired(
         spec,
         spikein,
         input_r1,  # type: ignore[arg-type]
@@ -168,7 +168,7 @@ def _align_spikein(
     )
 
     logger.info("Mapping input reads (not on spikein) to reference genome")
-    align_bowtie2_paired(
+    align_bwamem2_paired(
         spec,
         genome,
         Path(f"{paths.input_non_aligned_calibration}.1.gz"),
@@ -179,7 +179,7 @@ def _align_spikein(
     )
 
     logger.info("Mapping input reads (not on genome) to spikein genome")
-    align_bowtie2_paired(
+    align_bwamem2_paired(
         spec,
         spikein,
         Path(f"{paths.input_non_aligned_genome}.1.gz"),

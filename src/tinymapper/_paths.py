@@ -115,7 +115,7 @@ class RunPaths:
 
     @property
     def sample_non_aligned_genome(self) -> Path:
-        """Prefix for unmapped reads (bowtie2 --un-conc-gz appends .1.gz/.2.gz)."""
+        """Prefix for unmapped reads (bwa-mem2 + samtools fastq appends .1.gz/.2.gz)."""
         return (
             self.outdir
             / "fastq/genome"

@@ -185,9 +185,9 @@ class TinyMapperRunner:
         elif spec.mode == TinyMapperMode.hic:
             required = ["hicstuff", "samtools", "bedtools", "bedGraphToBigWig"]
         elif spec.mode == TinyMapperMode.shotgun:
-            required = ["bowtie2", "samtools", "bamCoverage"]
+            required = ["bwa-mem2", "samtools", "bamCoverage"]
         else:
-            required = ["bowtie2", "samtools", "bamCoverage"]
+            required = ["bwa-mem2", "samtools", "bamCoverage"]
 
         for tool in required:
             if not shutil.which(tool):
@@ -218,13 +218,23 @@ class TinyMapperRunner:
                     f"Build it with: STAR --runMode genomeGenerate "
                     f"--genomeFastaFiles {genome_fa} --genomeDir {star_dir}"
                 )
-        else:
+        elif spec.mode == TinyMapperMode.hic:
+            # hicstuff calls bowtie2 internally — keep bowtie2 index for this mode.
             for ext in [".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"]:
                 idx = Path(str(genome_base) + ext)
                 if not idx.exists():
                     raise RuntimeError(
                         f"bowtie2 {label} index file missing: {idx}\n"
                         f"Build it with: bowtie2-build {genome_fa} {genome_base}"
+                    )
+        else:
+            # bwa-mem2 index files are named after the FASTA file.
+            for ext in [".0123", ".bwt.2bit.64", ".amb", ".ann", ".pac"]:
+                idx = Path(str(genome_fa) + ext)
+                if not idx.exists():
+                    raise RuntimeError(
+                        f"bwa-mem2 {label} index file missing: {idx}\n"
+                        f"Build it with: bwa-mem2 index {genome_fa}"
                     )
 
         # Generate chrom.sizes if missing (non-fatal)

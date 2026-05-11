@@ -26,7 +26,7 @@ _SE_FILTER_OPTS = "-F 0x004 -q 10"
 # ------------------------------------------------------------------ #
 
 
-def align_bowtie2_paired(
+def align_bwamem2_paired(
     spec: JobSpec,
     genome_prefix: str,
     r1: Path,
@@ -35,19 +35,21 @@ def align_bowtie2_paired(
     unmapped_prefix: Path,
     log_file: Path,
 ) -> None:
-    """Run bowtie2 in paired-end mode."""
-    cmd = (
-        f"bowtie2 {spec.alignment} "
-        f"--threads {spec.threads} "
-        f"-x {genome_prefix} "
-        f"-1 {r1} -2 {r2} "
-        f"--un-conc-gz {unmapped_prefix}.gz "
-        f"> {out_sam}"
-    )
+    """Run bwa-mem2 in paired-end mode and extract unmapped pairs."""
+    genome_fa = f"{genome_prefix}.fa"
+    aln = f" {spec.alignment}" if spec.alignment else ""
+    cmd = f"bwa-mem2 mem{aln} -t {spec.threads} {genome_fa} {r1} {r2} > {out_sam}"
     run_cmd(cmd, log_file, spec.dry_run)
+    # Extract pairs where both mates are unmapped (mirrors bowtie2 --un-conc-gz).
+    cmd_unmapped = (
+        f"samtools fastq -@ {spec.threads} -f 12 -F 256 -c 6 "
+        f"-1 {unmapped_prefix}.1.gz -2 {unmapped_prefix}.2.gz "
+        f"{out_sam}"
+    )
+    run_cmd(cmd_unmapped, log_file, spec.dry_run)
 
 
-def align_bowtie2_single(
+def align_bwamem2_single(
     spec: JobSpec,
     genome_prefix: str,
     r1: Path,
@@ -55,28 +57,25 @@ def align_bowtie2_single(
     out_sam: Path,
     log_file: Path,
 ) -> None:
-    """Run bowtie2 in single-end mode (shotgun: feeds both R1 and R2 as -U)."""
-    cmd = (
-        f"bowtie2 {spec.alignment} "
-        f"--threads {spec.threads} "
-        f"-x {genome_prefix} "
-        f"-U {r1},{r2} "
-        f"> {out_sam}"
-    )
+    """Run bwa-mem2 treating R1 and R2 as independent single-end reads."""
+    genome_fa = f"{genome_prefix}.fa"
+    aln = f" {spec.alignment}" if spec.alignment else ""
+    # Cat both files so each read is aligned independently (same as bowtie2 -U r1,r2).
+    cmd = f"cat {r1} {r2} | bwa-mem2 mem{aln} -t {spec.threads} {genome_fa} - > {out_sam}"
     run_cmd(cmd, log_file, spec.dry_run)
 
 
-def align_bowtie2_se(
+def align_bwamem2_se(
     spec: JobSpec,
     genome_prefix: str,
     r1: Path,
     out_sam: Path,
     log_file: Path,
 ) -> None:
-    """Run bowtie2 with a single read file (true single-end data)."""
-    cmd = (
-        f"bowtie2 {spec.alignment} --threads {spec.threads} -x {genome_prefix} -U {r1} > {out_sam}"
-    )
+    """Run bwa-mem2 with a single read file (true single-end data)."""
+    genome_fa = f"{genome_prefix}.fa"
+    aln = f" {spec.alignment}" if spec.alignment else ""
+    cmd = f"bwa-mem2 mem{aln} -t {spec.threads} {genome_fa} {r1} > {out_sam}"
     run_cmd(cmd, log_file, spec.dry_run)
 
 
@@ -100,10 +99,9 @@ def filter_bam_paired(
         f"| samtools sort {so} -T {in_sam}_sorting - "
         f"| samtools markdup {so} {rd} - - "
         f"| samtools view {so} {fo} -1 -b - "
-        f"| samtools sort {so} -l 9 -T {in_sam}_sorting2 -o {out_bam}"
+        f"| samtools sort --write-index {so} -l 9 -T {in_sam}_sorting2 -o {out_bam}"
     )
     run_cmd(cmd, log_file, spec.dry_run)
-    run_cmd(f"samtools index -@ {spec.threads} {out_bam}", log_file, spec.dry_run)
 
 
 def filter_bam_single(
@@ -119,14 +117,13 @@ def filter_bam_single(
     cmd = (
         f"samtools sort {so} -T {in_sam}_sorting {in_sam} "
         f"| samtools view {so} {fo} -1 -b - "
-        f"| samtools sort {so} -l 9 -T {in_sam}_sorting2 -o {out_bam}"
+        f"| samtools sort --write-index {so} -l 9 -T {in_sam}_sorting2 -o {out_bam}"
     )
     run_cmd(cmd, log_file, spec.dry_run)
-    run_cmd(f"samtools index -@ {spec.threads} {out_bam}", log_file, spec.dry_run)
 
 
 # ------------------------------------------------------------------ #
-#  Track generation                                                    #
+#  Track generation                                                  #
 # ------------------------------------------------------------------ #
 
 

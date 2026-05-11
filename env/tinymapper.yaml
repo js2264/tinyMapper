@@ -5,15 +5,16 @@ channels:
   - nodefaults
 dependencies:
   # Alignment
+  - bwa-mem2
   - bowtie2
   - star
   # SAM/BAM processing
-  - samtools
+  - samtools>1.23
   # Coverage tracks and peak calling
   - deeptools
   - macs3
   # Hi-C pipeline
-  - hicstuff>=3.2.4
+  - hicstuff>=3.2.5
   - cooler
   # Genome tools
   - bedtools

@@ -59,7 +59,7 @@ class JobSpec(BaseModel):
     threads: int = 8
 
     # ---- Alignment / filtering ----
-    alignment: str = "--maxins 1000"
+    alignment: str = ""
     filter_opts: str = "-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10"
     blacklist: str = ""
     gsize: str = "13000000"
@@ -185,7 +185,7 @@ class JobSpec(BaseModel):
             args += ["--input", self.input]
         if self.calibration:
             args += ["--calibration", self.calibration]
-        if self.alignment != "--maxins 1000":
+        if self.alignment:
             args += ["--alignment", self.alignment]
         if self.filter_opts != "-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10":
             args += ["--filter", self.filter_opts]

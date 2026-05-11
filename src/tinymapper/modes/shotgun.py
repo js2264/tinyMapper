@@ -1,8 +1,10 @@
-"""Shotgun sequencing mode: bowtie2 (single-end) → samtools → bamCoverage.
+"""Shotgun sequencing mode: bwa-mem2 (single-end) → samtools → bamCoverage.
 
-Shotgun mode overrides alignment options to ``--sensitive-local`` and
-filter options to ``-F 0x004 -q 10`` (single-end flags), matching the
-behaviour of ``tinyMapper.sh`` for this mode.
+Shotgun mode aligns both R1 and R2 independently as single-end reads.
+bwa-mem2 mem already performs local (soft-clipped) alignment by default,
+so no special alignment flags are needed.
+Filter options are set to ``-F 0x004 -q 10`` (single-end flags), matching
+the behaviour of ``tinyMapper.sh`` for this mode.
 """
 
 from __future__ import annotations
@@ -17,7 +19,6 @@ from tinymapper.models import JobSpec
 
 logger = logging.getLogger(__name__)
 
-_SHOTGUN_ALIGNMENT = "--sensitive-local"
 _SHOTGUN_FILTER = "-F 0x004 -q 10"
 
 
@@ -31,7 +32,7 @@ def run(
     log_file: Path,
 ) -> None:
     """Execute the shotgun pipeline."""
-    logger.info("Mapping sample reads to reference genome with bowtie2 (single-end)")
+    logger.info("Mapping sample reads to reference genome with bwa-mem2 (single-end)")
     _align_single(spec, paths, sample_r1, sample_r2, log_file)
 
     logger.info("Filtering sample BAM (single-end)")
@@ -60,15 +61,16 @@ def _align_single(
     r2: Path | None,
     log_file: Path,
 ) -> None:
-    """bowtie2 in single-end mode: R1 (and optionally R2) passed as -U."""
-    reads = f"{r1},{r2}" if r2 is not None else str(r1)
-    cmd = (
-        f"bowtie2 {_SHOTGUN_ALIGNMENT} "
-        f"--threads {spec.threads} "
-        f"-x {spec.genome} "
-        f"-U {reads} "
-        f"> {paths.sample_aligned_genome}"
-    )
+    """bwa-mem2 in single-end mode: R1 (and optionally R2) treated as independent reads."""
+    genome_fa = f"{spec.genome}.fa"
+    if r2 is not None:
+        cmd = (
+            f"cat {r1} {r2} | "
+            f"bwa-mem2 mem -t {spec.threads} {genome_fa} - "
+            f"> {paths.sample_aligned_genome}"
+        )
+    else:
+        cmd = f"bwa-mem2 mem -t {spec.threads} {genome_fa} {r1} > {paths.sample_aligned_genome}"
     run_cmd(cmd, log_file, spec.dry_run)
 
 

@@ -1,14 +1,14 @@
-"""MNase-seq mode: bowtie2 → samtools → [fragment-size filter] → bamCoverage.
+"""MNase-seq mode: bwa-mem2 → samtools → [fragment-size filter] → bamCoverage.
 
 Paired-end pipeline:
-  1. bowtie2 paired-end alignment
+  1. bwa-mem2 paired-end alignment
   2. samtools fixmate → markdup → filter → BAM
   3. Filter BAM by insert size (MNASE_MIN–MNASE_MAX bp)
   4. Generate 40 bp-resized BAM (for nucleosome positioning)
   5. bamCoverage: size-filtered CPM, nucleosome-positioning (--MNase), coverage
 
 Single-end pipeline (fragment size is unknown):
-  1. bowtie2 single-end alignment
+  1. bwa-mem2 single-end alignment
   2. samtools sort → filter → BAM
   3. bamCoverage: standard CPM track only
 """
@@ -19,8 +19,8 @@ import logging
 from pathlib import Path
 
 from tinymapper._common import (
-    align_bowtie2_paired,
-    align_bowtie2_se,
+    align_bwamem2_paired,
+    align_bwamem2_se,
     bam_coverage_cpm,
     filter_bam_paired,
     filter_bam_single,
@@ -44,9 +44,9 @@ def run(
     """Execute the MNase-seq pipeline (paired-end or single-end)."""
     paired = sample_r2 is not None
 
-    logger.info("Mapping sample reads to reference genome with bowtie2")
+    logger.info("Mapping sample reads to reference genome with bwa-mem2")
     if paired:
-        align_bowtie2_paired(
+        align_bwamem2_paired(
             spec,
             spec.genome,
             sample_r1,
@@ -66,7 +66,7 @@ def run(
         _generate_40bp_bam(spec, paths, log_file)
         _mnase_tracks(spec, paths, log_file)
     else:
-        align_bowtie2_se(
+        align_bwamem2_se(
             spec,
             spec.genome,
             sample_r1,

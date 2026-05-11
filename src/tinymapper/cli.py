@@ -130,9 +130,9 @@ click.rich_click.OPTION_GROUPS = {
 @click.option(
     "-a",
     "--alignment",
-    default="--maxins 1000",
-    show_default=True,
-    help="Extra options passed to bowtie2 (use single quotes).",
+    default="",
+    show_default=False,
+    help="Extra options passed to bwa-mem2 mem (use single quotes).",
 )
 @click.option(
     "-f",
@@ -243,12 +243,12 @@ def cli(
 
     \b
     Modes:
-      ChIP    — ChIP-seq (bowtie2 → samtools → bamCoverage → macs3)
+      ChIP    — ChIP-seq (bwa-mem2 → samtools → bamCoverage → macs3)
       RNA     — RNA-seq  (STAR → samtools → bamCoverage × 3)
-      ATAC    — ATAC-seq (bowtie2 → samtools → bamCoverage → macs3)
-      MNase   — MNase-seq (bowtie2 → samtools → size filter → 3 tracks)
+      ATAC    — ATAC-seq (bwa-mem2 → samtools → bamCoverage → macs3)
+      MNase   — MNase-seq (bwa-mem2 → samtools → size filter → 3 tracks)
       HiC     — Hi-C     (hicstuff pipeline → cooler → mcool)
-      shotgun — Shotgun  (bowtie2 single-end → samtools → bamCoverage)
+      shotgun — Shotgun  (bwa-mem2 single-end → samtools → bamCoverage)
 
     \b
     Examples:
