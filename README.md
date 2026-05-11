@@ -35,7 +35,7 @@ Requires [`micromamba`](https://mamba.readthedocs.io/en/latest/installation/micr
 
 ```sh
 git clone https://github.com/js2264/tinyMapper.git
-micromamba env create -n tinymapper -f tinyMapper/env/tinymapper.yaml
+micromamba env create -y -f tinyMapper/env/tinymapper.yaml
 micromamba activate tinymapper
 tinymapper --help
 ```
