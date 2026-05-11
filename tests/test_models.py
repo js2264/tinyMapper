@@ -58,7 +58,7 @@ def test_mode_normalisation(raw, expected):
 def test_jobspec_defaults():
     spec = JobSpec(mode="chip", sample="/reads/JS001", genome="/genome/W303/W303")
     assert spec.threads == 8
-    assert spec.alignment == "--maxins 1000"
+    assert spec.alignment == ""
     assert spec.filter_opts == "-f 0x001 -f 0x002 -F 0x004 -F 0x008 -q 10"
     assert spec.gsize == "13000000"
     assert not spec.keep_duplicates

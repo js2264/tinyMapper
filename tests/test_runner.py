@@ -135,7 +135,7 @@ def test_run_dry_run_returns_zero(tmp_path):
     r1.touch()
     r2.touch()
 
-    # Provide a minimal "genome" prefix with fake bt2 + fa + chrom.sizes
+    # Provide a minimal "genome" prefix with fake bwa-mem2 + fa + chrom.sizes
     genome_dir = tmp_path / "genome"
     genome_dir.mkdir()
     genome_prefix = genome_dir / "W303"
@@ -143,12 +143,11 @@ def test_run_dry_run_returns_zero(tmp_path):
         ".fa",
         ".fa.fai",
         ".chrom.sizes",
-        ".1.bt2",
-        ".2.bt2",
-        ".3.bt2",
-        ".4.bt2",
-        ".rev.1.bt2",
-        ".rev.2.bt2",
+        ".fa.0123",
+        ".fa.bwt.2bit.64",
+        ".fa.amb",
+        ".fa.ann",
+        ".fa.pac",
     ]:
         Path(str(genome_prefix) + ext).touch()
 
