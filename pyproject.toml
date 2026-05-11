@@ -24,6 +24,9 @@ dev = [
 [project.scripts]
 tinymapper = "tinymapper.cli:cli"
 
+[tool.hatch.build.targets.sdist]
+exclude = ["tests/"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/tinymapper"]
 
