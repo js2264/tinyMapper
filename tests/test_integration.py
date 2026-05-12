@@ -198,7 +198,7 @@ def test_atac_single_end():
         ["-m", "ATAC", "-s", _sample("testATAC_se"), "-g", _genome("R64-1-1/R64-1-1"), "-k"],
         TESTS_RESULTS_DIR / "atac_single_end",
     )
-    assert result.returncode == 0, "ATAC (single-end w/o extend) failed"
+    assert result.returncode == 1, "ATAC (single-end w/o extend) failed"
 
 
 @requires_env
@@ -245,6 +245,65 @@ def test_hic():
 def test_shotgun():
     result = _run(
         ["-m", "shotgun", "-s", _sample("testShotgun"), "-g", _genome("R64-1-1/R64-1-1"), "-k"],
+        TESTS_RESULTS_DIR / "shotgun",
+    )
+    assert result.returncode == 0, "shotgun failed"
+
+
+@requires_env
+def test_shotgun_as_se_noextend():
+    result = _run(
+        [
+            "-m",
+            "shotgun",
+            "-s",
+            _sample("testShotgun"),
+            "-g",
+            _genome("R64-1-1/R64-1-1"),
+            "--as-single-end",
+            "-k",
+        ],
+        TESTS_RESULTS_DIR / "shotgun",
+    )
+    assert result.returncode == 1, "shotgun (as se, no extend) failed"
+
+
+@requires_env
+def test_shotgun_as_se():
+    result = _run(
+        [
+            "-m",
+            "shotgun",
+            "-s",
+            _sample("testShotgun"),
+            "-g",
+            _genome("R64-1-1/R64-1-1"),
+            "--as-single-end",
+            "--extend-reads",
+            "2000",
+            "-k",
+        ],
+        TESTS_RESULTS_DIR / "shotgun",
+    )
+    assert result.returncode == 0, "shotgun (as se) failed"
+
+
+@requires_env
+def test_shotgun_se():
+    result = _run(
+        [
+            "-m",
+            "shotgun",
+            "-s",
+            _sample("testShotgun_se"),
+            "-g",
+            _genome("R64-1-1/R64-1-1"),
+            "--blacklist",
+            _blacklist("blacklist.bed"),
+            "--extend-reads",
+            "200",
+            "-k",
+        ],
         TESTS_RESULTS_DIR / "shotgun",
     )
     assert result.returncode == 0, "shotgun failed"
