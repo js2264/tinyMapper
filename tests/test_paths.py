@@ -159,3 +159,10 @@ def test_sample_input_track_with_spikein(paths):
     p = paths.sample_input_track
     assert "JS002" in p.name  # vs-{input_base}
     assert "CBS138" in p.name
+
+
+def test_sample_input_log2_track_with_spikein(paths):
+    p = paths.sample_input_log2_track
+    assert "JS002" in p.name
+    assert "CBS138" in p.name
+    assert ".log2.bw" in p.name

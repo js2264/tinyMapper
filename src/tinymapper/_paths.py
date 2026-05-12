@@ -316,6 +316,17 @@ class RunPaths:
         return self.outdir / "tracks" / self.sample_base / f"{self.sample_base}{suffix}"
 
     @property
+    def sample_input_log2_track(self) -> Path:
+        if self.spikein:
+            suffix = (
+                f"^unmapped_{self.spikein}^mapped_{self.genome}"
+                f"^{self.hash_}.vs-{self.input_base}.log2.bw"
+            )
+        else:
+            suffix = f"^mapped_{self.genome}^{self.hash_}.vs-{self.input_base}.log2.bw"
+        return self.outdir / "tracks" / self.sample_base / f"{self.sample_base}{suffix}"
+
+    @property
     def sample_spikeinscaled_track(self) -> Path:
         return (
             self.outdir

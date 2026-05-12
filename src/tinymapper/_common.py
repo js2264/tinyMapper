@@ -187,8 +187,10 @@ def bam_compare(
     input_bam: Path,
     out_bw: Path,
     log_file: Path,
+    *,
+    operation: str = "ratio",
 ) -> None:
-    """bamCompare (sample / input ratio track)."""
+    """bamCompare (sample / input ratio or log2 ratio track)."""
     bl = spec.blacklist_options
     id_ = spec.ignore_duplicates_flag
     cmd = (
@@ -196,7 +198,7 @@ def bam_compare(
         f"-b1 {sample_bam} -b2 {input_bam} "
         f"--outFileName {out_bw} "
         f"--scaleFactorsMethod readCount "
-        f"--operation ratio "
+        f"--operation {operation} "
         f"--skipZeroOverZero "
         f"--skipNAs "
         f"--numberOfProcessors {spec.threads} "

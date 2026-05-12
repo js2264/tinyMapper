@@ -417,11 +417,13 @@ INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED="${OUTDIR}"/bam/genome/"${
 SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
 INPUT_RAW_TRACK="${OUTDIR}"/tracks/"${INPUT_BASE}"/"${INPUT_BASE}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
 SAMPLE_INPUT_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".vs-"${INPUT_BASE}".bw
+SAMPLE_INPUT_LOG2_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^mapped_"${GENOME}"^"${HASH}".vs-"${INPUT_BASE}".log2.bw
 
 if test "${DO_CALIBRATION}" == 0 ; then
     SAMPLE_RAW_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
     INPUT_RAW_TRACK="${OUTDIR}"/tracks/"${INPUT_BASE}"/"${INPUT_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.bw
     SAMPLE_INPUT_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".vs-"${INPUT_BASE}".bw
+    SAMPLE_INPUT_LOG2_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".vs-"${INPUT_BASE}".log2.bw
     SAMPLE_SPIKEINSCALED_TRACK="${OUTDIR}"/tracks/"${SAMPLE_BASE}"/"${SAMPLE_BASE}"^unmapped_"${SPIKEIN}"^mapped_"${GENOME}"^"${HASH}".CPM.calibrated.bw
 fi
 
@@ -1238,6 +1240,23 @@ if test "${DO_CALIBRATION}" == 1 && test "${MODE}" != shotgun && test "${MODE}" 
             "${IGNORE_DUPLICATES}""
         fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
 
+        fn_log "Generating log2 track for ${SAMPLE_BASE} divided by ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
+        cmd="bamCompare \
+            -b1 "${SAMPLE_ALIGNED_GENOME_FILTERED}" \
+            -b2 "${INPUT_ALIGNED_GENOME_FILTERED}" \
+            --outFileName "${SAMPLE_INPUT_LOG2_TRACK}" \
+            --scaleFactorsMethod readCount \
+            --operation log2 \
+            --skipZeroOverZero \
+            --skipNAs \
+            --numberOfProcessors "${CPU}" \
+            "${BLACKLIST_OPTIONS}" \
+            --binSize 5 \
+            --skipNonCoveredRegions \
+            --extendReads \
+            "${IGNORE_DUPLICATES}""
+        fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
     fi
 
 fi
@@ -1277,6 +1296,23 @@ if test "${DO_CALIBRATION}" == 0 ; then
         --outFileName "${SAMPLE_INPUT_TRACK}" \
         --scaleFactorsMethod readCount \
         --operation ratio \
+        --skipZeroOverZero \
+        --skipNAs \
+        --numberOfProcessors "${CPU}" \
+        "${BLACKLIST_OPTIONS}" \
+        --binSize 5 \
+        --extendReads \
+        --skipNonCoveredRegions \
+        "${IGNORE_DUPLICATES}""
+    fn_exec "${cmd}" "${LOGFILE}" 2>> "${LOGFILE}"
+
+    fn_log "Generating log2 track for ${SAMPLE_BASE} divided by ${INPUT_BASE}" 2>&1 | tee -a "${LOGFILE}"
+    cmd="bamCompare \
+        -b1 "${SAMPLE_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
+        -b2 "${INPUT_NON_ALIGNED_CALIBRATION_ALIGNED_GENOME_FILTERED}" \
+        --outFileName "${SAMPLE_INPUT_LOG2_TRACK}" \
+        --scaleFactorsMethod readCount \
+        --operation log2 \
         --skipZeroOverZero \
         --skipNAs \
         --numberOfProcessors "${CPU}" \

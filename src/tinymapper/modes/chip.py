@@ -271,6 +271,15 @@ def _tracks_no_calibration(spec: JobSpec, paths: RunPaths, log_file: Path) -> No
             paths.sample_input_track,
             log_file,
         )
+        logger.info("Generating sample/input log2 ratio track")
+        bam_compare(
+            spec,
+            paths.sample_aligned_genome_filtered,
+            paths.input_aligned_genome_filtered,
+            paths.sample_input_log2_track,
+            log_file,
+            operation="log2",
+        )
 
 
 def _tracks_with_calibration(
@@ -290,6 +299,11 @@ def _tracks_with_calibration(
 
     logger.info("Generating sample/input ratio track (spikein-calibrated run)")
     bam_compare(spec, sample_bam, input_bam, paths.sample_input_track, log_file)
+
+    logger.info("Generating sample/input log2 ratio track (spikein-calibrated run)")
+    bam_compare(
+        spec, sample_bam, input_bam, paths.sample_input_log2_track, log_file, operation="log2"
+    )
 
     logger.info("Generating spikein-scaled CPM track")
     bam_coverage_scaled(
