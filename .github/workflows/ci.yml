@@ -70,7 +70,7 @@ jobs:
         shell: micromamba-shell {0}
 
       - name: Run tests under micromamba env
-        run: pytest tests/test_integration.py -v --cov=tinymapper --cov-report=term-missing
+        run: pytest tests/test_integration.py -v --cov
         shell: micromamba-shell {0}
 
       - name: Create micromamba environment file

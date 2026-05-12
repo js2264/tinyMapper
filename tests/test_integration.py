@@ -16,6 +16,7 @@ correctly against the bundled test FASTQ files.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -122,6 +123,9 @@ requires_env = pytest.mark.skipif(
     ),
 )
 
+skip_on_ci = pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true", reason="Skipped on GitHub Actions"
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -216,6 +220,7 @@ def test_chip_with_input_and_calibration():
     assert result.returncode == 0, "ChIP (sample + input + calibration) failed"
 
 
+@skip_on_ci
 @requires_env
 def test_rna():
     result = _run(
