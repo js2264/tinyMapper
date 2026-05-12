@@ -52,7 +52,7 @@ jobs:
         run: uv run pytest tests/ -v --cov=tinymapper --cov-report=term-missing
 
   test_commands:
-    name: Integration tests / Python ${{ matrix.python-version }} & micromamba
+    name: Integration tests / micromamba
     runs-on: ubuntu-latest
     needs: lint
     steps:
@@ -60,7 +60,8 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v3
         with:
-          environment-file: env/tinymapper.yaml
+          environment-file: env/conda-lock.yml
+          environment-name: tinymapper
           init-shell: bash
           cache-environment: true
 
@@ -72,10 +73,21 @@ jobs:
         run: pytest tests/test_integration.py -v --cov=tinymapper --cov-report=term-missing
         shell: micromamba-shell {0}
 
+      - name: Create micromamba environment file
+        run: micromamba env export -n tinymapper > tinymapper_env.yaml
+
+      - name: Upload micromamba environment as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tinymapper_env.yaml
+          path: tinymapper_env.yaml
+          overwrite: true
+          archive: false
+
   release:
     name: GitHub Release
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, test_commands]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write

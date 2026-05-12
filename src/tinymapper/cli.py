@@ -28,7 +28,7 @@ click.rich_click.OPTION_GROUPS = {
         },
         {
             "name": "Core optional",
-            "options": ["--output", "--input", "--calibration", "--threads"],
+            "options": ["--output", "--threads"],
         },
         {
             "name": "Alignment / filtering",
@@ -48,6 +48,13 @@ click.rich_click.OPTION_GROUPS = {
                 "--restriction",
                 "--binning",
                 "--balance",
+            ],
+        },
+        {
+            "name": "ChIP",
+            "options": [
+                "--input",
+                "--calibration",
             ],
         },
         {

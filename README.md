@@ -272,6 +272,22 @@ sbatch --mem 40G -c 10 --wrap \
 
 ---
 
+## Development cycle
+
+- Regenerate `uv.lock` and `env.lock` after any dependency changes.
+
+```shell
+uv lock
+uv run \
+    conda-lock lock \
+        --update \
+        --micromamba \
+        --file env/tinymapper.yaml \
+        --platform linux-64 \
+        --lockfile env/conda-lock.yml
+conda-lock install --name <ENV_NAME> env/conda-lock.yml
+```
+
 ## Acknowledgments
 
 - A. Cournac, A. Bignaud & F. Girard for tests.
