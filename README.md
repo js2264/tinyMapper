@@ -34,8 +34,7 @@ tools (bowtie2, STAR, samtools, deeptools, macs3, hicstuff, cooler, bedtools).
 Requires [`micromamba`](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html).
 
 ```sh
-git clone https://github.com/js2264/tinyMapper.git
-micromamba env create -y -f tinyMapper/env/tinymapper.yaml
+micromamba env create -n tinymapper -f https://raw.githubusercontent.com/js2264/tinyMapper/refs/heads/master/env/conda-lock.yml -y
 micromamba activate tinymapper
 tinymapper --help
 ```
