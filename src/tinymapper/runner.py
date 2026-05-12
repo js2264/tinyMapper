@@ -110,6 +110,13 @@ class TinyMapperRunner:
                     "Fragment-size filtering (MNase) and spikein calibration "
                     "are not available in SE mode."
                 )
+            elif spec.as_single_end and spec.mode == TinyMapperMode.shotgun:
+                if spec.extend_reads_len is None:
+                    raise RuntimeError(
+                        "--as-single-end requires --extend-reads to be set.  "
+                        "Provide a fragment length (e.g. --extend-reads 200) so that "
+                        "bamCoverage can extend single-end reads to the correct size."
+                    )
 
             self._log_startup(sample_r1)
 

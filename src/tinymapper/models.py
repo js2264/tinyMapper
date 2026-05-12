@@ -78,6 +78,9 @@ class JobSpec(BaseModel):
     # ---- Track generation ----
     extend_reads_len: int | None = None  # --extendReads value for single-end bamCoverage
 
+    # ---- Shotgun-specific ----
+    as_single_end: bool = False  # --as-single-end: cat R1+R2 and map as SE (legacy shotgun)
+
     # ---- Runtime (not CLI flags) ----
     hash: str = ""  # populated in model_post_init
     dry_run: bool = False
@@ -207,4 +210,8 @@ class JobSpec(BaseModel):
             args += ["--balance", self.balance_opts]
         if self.mode == TinyMapperMode.mnase:
             args += ["--MNaseSizes", self.mnase_sizes]
+        if self.extend_reads_len is not None:
+            args += ["--extend-reads", str(self.extend_reads_len)]
+        if self.as_single_end:
+            args.append("--as-single-end")
         return args

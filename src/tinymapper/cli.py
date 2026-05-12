@@ -55,6 +55,10 @@ click.rich_click.OPTION_GROUPS = {
             "options": ["--MNaseSizes"],
         },
         {
+            "name": "Shotgun",
+            "options": ["--as-single-end"],
+        },
+        {
             "name": "Output",
             "options": [
                 "--keepIntermediate",
@@ -214,6 +218,17 @@ click.rich_click.OPTION_GROUPS = {
     show_default=True,
     help="Min,Max fragment size for MNase track.",
 )
+# ---- Shotgun ----
+@click.option(
+    "--as-single-end",
+    "as_single_end",
+    is_flag=True,
+    default=False,
+    help=(
+        "(shotgun) Map R1 and R2 independently as single-end reads (legacy behaviour).  "
+        "Ignored for all other modes."
+    ),
+)
 # ---- Output behaviour ----
 @click.option(
     "-k",
@@ -249,6 +264,7 @@ def cli(
     binning: str,
     balance_opts: str,
     mnase_sizes: str,
+    as_single_end: bool,
     keep_intermediate: bool,
     dry_run: bool,
 ) -> None:
@@ -261,7 +277,7 @@ def cli(
       ATAC    — ATAC-seq (bwa-mem2 → samtools → bamCoverage → macs3)
       MNase   — MNase-seq (bwa-mem2 → samtools → size filter → 3 tracks)
       HiC     — Hi-C     (hicstuff pipeline → cooler → mcool)
-      shotgun — Shotgun  (bwa-mem2 single-end → samtools → bamCoverage)
+      shotgun — Shotgun  (bwa-mem2 paired-end → samtools → bamCoverage)
 
     \b
     Examples:
@@ -290,6 +306,7 @@ def cli(
             gsize=gsize,
             keep_duplicates=duplicates,
             extend_reads_len=extend_reads_len,
+            as_single_end=as_single_end,
             hicstuff_opts=hicstuff_opts,
             restriction=restriction,
             binning=binning,

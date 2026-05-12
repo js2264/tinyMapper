@@ -198,7 +198,26 @@ def test_atac_single_end():
         ["-m", "ATAC", "-s", _sample("testATAC_se"), "-g", _genome("R64-1-1/R64-1-1"), "-k"],
         TESTS_RESULTS_DIR / "atac_single_end",
     )
-    assert result.returncode == 0, "ATAC (single-end) failed"
+    assert result.returncode == 0, "ATAC (single-end w/o extend) failed"
+
+
+@requires_env
+def test_atac_single_end_with_extend():
+    result = _run(
+        [
+            "-m",
+            "ATAC",
+            "-s",
+            _sample("testATAC_se"),
+            "-g",
+            _genome("R64-1-1/R64-1-1"),
+            "--extend-reads",
+            "500",
+            "-k",
+        ],
+        TESTS_RESULTS_DIR / "atac_single_end",
+    )
+    assert result.returncode == 0, "ATAC (single-end w/ extend) failed"
 
 
 @requires_env

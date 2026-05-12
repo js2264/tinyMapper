@@ -166,3 +166,105 @@ def test_run_dry_run_returns_zero(tmp_path):
 
     assert exit_code == 0
     assert (outdir / "logs").is_dir()
+
+
+def _make_genome_dir(tmp_path: Path) -> Path:
+    """Create a minimal fake genome index and return the prefix."""
+    genome_dir = tmp_path / "genome"
+    genome_dir.mkdir(exist_ok=True)
+    prefix = genome_dir / "W303"
+    for ext in [
+        ".fa",
+        ".fa.fai",
+        ".chrom.sizes",
+        ".fa.0123",
+        ".fa.bwt.2bit.64",
+        ".fa.amb",
+        ".fa.ann",
+        ".fa.pac",
+    ]:
+        Path(str(prefix) + ext).touch()
+    return prefix
+
+
+# ------------------------------------------------------------------ #
+#  Single-end / as-single-end validation                               #
+# ------------------------------------------------------------------ #
+
+
+def test_run_se_without_extend_reads_raises(tmp_path):
+    """Single-end reads without --extend-reads should error for non-RNA modes."""
+    r1 = tmp_path / "JS001_R1.fq.gz"
+    r1.touch()
+    genome_prefix = _make_genome_dir(tmp_path)
+    spec = JobSpec(
+        mode="chip",
+        sample=str(tmp_path / "JS001"),
+        genome=str(genome_prefix),
+        output=tmp_path / "results",
+        dry_run=True,
+    )
+    with patch("shutil.which", return_value="/usr/bin/fake"):
+        runner = TinyMapperRunner(spec)
+        exit_code = runner.run()
+    assert exit_code == 1
+
+
+def test_run_se_with_extend_reads_ok(tmp_path):
+    """Single-end chip with --extend-reads set should not raise during validation."""
+    r1 = tmp_path / "JS001_R1.fq.gz"
+    r1.touch()
+    genome_prefix = _make_genome_dir(tmp_path)
+    spec = JobSpec(
+        mode="chip",
+        sample=str(tmp_path / "JS001"),
+        genome=str(genome_prefix),
+        output=tmp_path / "results",
+        extend_reads_len=200,
+        dry_run=True,
+    )
+    with patch("shutil.which", return_value="/usr/bin/fake"):
+        runner = TinyMapperRunner(spec)
+        exit_code = runner.run()
+    assert exit_code == 0
+
+
+def test_run_shotgun_as_single_end_without_extend_reads_raises(tmp_path):
+    """--as-single-end shotgun without --extend-reads should error."""
+    r1 = tmp_path / "JS001_R1.fq.gz"
+    r2 = tmp_path / "JS001_R2.fq.gz"
+    r1.touch()
+    r2.touch()
+    genome_prefix = _make_genome_dir(tmp_path)
+    spec = JobSpec(
+        mode="shotgun",
+        sample=str(tmp_path / "JS001"),
+        genome=str(genome_prefix),
+        output=tmp_path / "results",
+        as_single_end=True,
+        dry_run=True,
+    )
+    with patch("shutil.which", return_value="/usr/bin/fake"):
+        runner = TinyMapperRunner(spec)
+        exit_code = runner.run()
+    assert exit_code == 1
+
+
+def test_run_shotgun_paired_end_default_ok(tmp_path):
+    """Default paired-end shotgun (no --as-single-end) needs no --extend-reads."""
+    r1 = tmp_path / "JS001_R1.fq.gz"
+    r2 = tmp_path / "JS001_R2.fq.gz"
+    r1.touch()
+    r2.touch()
+    genome_prefix = _make_genome_dir(tmp_path)
+    spec = JobSpec(
+        mode="shotgun",
+        sample=str(tmp_path / "JS001"),
+        genome=str(genome_prefix),
+        output=tmp_path / "results",
+        dry_run=True,
+    )
+    with patch("shutil.which", return_value="/usr/bin/fake"):
+        runner = TinyMapperRunner(spec)
+        exit_code = runner.run()
+    assert exit_code == 0

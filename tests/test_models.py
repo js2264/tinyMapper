@@ -311,3 +311,40 @@ def test_to_cli_args_default_alignment_omitted():
     spec = JobSpec(mode="chip", sample="/reads/JS001", genome="/g/W303/W303", hash="TSTRUN")
     args = spec.to_cli_args()
     assert "--alignment" not in args
+
+
+def test_to_cli_args_extend_reads_len():
+    spec = JobSpec(
+        mode="shotgun",
+        sample="/reads/JS001",
+        genome="/g/W303/W303",
+        extend_reads_len=200,
+        hash="TSTRUN",
+    )
+    args = spec.to_cli_args()
+    assert "--extend-reads" in args
+    assert "200" in args
+
+
+def test_to_cli_args_extend_reads_len_omitted_when_none():
+    spec = JobSpec(mode="chip", sample="/reads/JS001", genome="/g/W303/W303", hash="TSTRUN")
+    args = spec.to_cli_args()
+    assert "--extend-reads" not in args
+
+
+def test_to_cli_args_as_single_end():
+    spec = JobSpec(
+        mode="shotgun",
+        sample="/reads/JS001",
+        genome="/g/W303/W303",
+        as_single_end=True,
+        hash="TSTRUN",
+    )
+    args = spec.to_cli_args()
+    assert "--as-single-end" in args
+
+
+def test_to_cli_args_as_single_end_omitted_by_default():
+    spec = JobSpec(mode="shotgun", sample="/reads/JS001", genome="/g/W303/W303", hash="TSTRUN")
+    args = spec.to_cli_args()
+    assert "--as-single-end" not in args
