@@ -140,7 +140,8 @@ def test_hic_pairs_paths(paths):
 
 def test_logfile_in_logs_dir(paths):
     assert "logs" in str(paths.logfile)
-    assert "_log.txt" in paths.logfile.name
+    assert paths.logfile.name.endswith(".log")
+    assert paths.errfile.name.endswith(".err")
     assert "ABCDEF" in paths.logfile.name
 
 

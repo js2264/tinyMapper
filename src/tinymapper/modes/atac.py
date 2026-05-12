@@ -78,6 +78,7 @@ def run(
         paths.sample_aligned_genome_filtered,
         paths.sample_raw_track,
         log_file,
+        extend_reads=paired,
     )
 
     logger.info("Calling peaks")

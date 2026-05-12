@@ -38,7 +38,7 @@ def align_bwamem2_paired(
     """Run bwa-mem2 in paired-end mode and extract unmapped pairs."""
     genome_fa = f"{genome_prefix}.fa"
     aln = f" {spec.alignment}" if spec.alignment else ""
-    cmd = f"bwa-mem2 mem{aln} -t {spec.threads} {genome_fa} {r1} {r2} > {out_sam}"
+    cmd = f"bwa-mem2 mem{aln} -v 1 -t {spec.threads} {genome_fa} {r1} {r2} > {out_sam}"
     run_cmd(cmd, log_file, spec.dry_run)
     # Extract pairs where both mates are unmapped (mirrors bowtie2 --un-conc-gz).
     cmd_unmapped = (
@@ -61,7 +61,7 @@ def align_bwamem2_single(
     genome_fa = f"{genome_prefix}.fa"
     aln = f" {spec.alignment}" if spec.alignment else ""
     # Cat both files so each read is aligned independently (same as bowtie2 -U r1,r2).
-    cmd = f"cat {r1} {r2} | bwa-mem2 mem{aln} -t {spec.threads} {genome_fa} - > {out_sam}"
+    cmd = f"cat {r1} {r2} | bwa-mem2 mem{aln} -v 1 -t {spec.threads} {genome_fa} - > {out_sam}"
     run_cmd(cmd, log_file, spec.dry_run)
 
 
@@ -75,7 +75,7 @@ def align_bwamem2_se(
     """Run bwa-mem2 with a single read file (true single-end data)."""
     genome_fa = f"{genome_prefix}.fa"
     aln = f" {spec.alignment}" if spec.alignment else ""
-    cmd = f"bwa-mem2 mem{aln} -t {spec.threads} {genome_fa} {r1} > {out_sam}"
+    cmd = f"bwa-mem2 mem{aln} -v 1 -t {spec.threads} {genome_fa} {r1} > {out_sam}"
     run_cmd(cmd, log_file, spec.dry_run)
 
 
