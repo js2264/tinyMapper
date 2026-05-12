@@ -313,3 +313,4 @@ tests/results/
 tests/out/
 tests/tmp/
 STAR/
+tests_results/
