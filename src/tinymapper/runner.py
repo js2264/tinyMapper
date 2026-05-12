@@ -373,7 +373,9 @@ class TinyMapperRunner:
                 gz.unlink(missing_ok=True)
 
     def _cleanup_on_failure(self) -> None:
-        """Remove any files matching this run's hash on failure."""
+        """Remove any files matching this run's hash on failure (skipped with -k)."""
+        if self.spec.keep_intermediate:
+            return
         for path in self.spec.output.rglob(f"*{self.spec.hash}*"):
             if path.suffix not in (".log", ".err") and path.is_file():
                 path.unlink(missing_ok=True)

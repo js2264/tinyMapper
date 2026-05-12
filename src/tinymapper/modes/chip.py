@@ -119,32 +119,18 @@ def _align_spikein(
     input_r2: Path | None,
     log_file: Path,
 ) -> None:
-    """Six additional alignments for spikein-based calibration."""
+    """Six additional alignments for spikein-based calibration.
+
+    Order matters: genome-unmapped FATSQs (produced in run()) must be consumed
+    before anything overwrites them, so cross-mapping goes first.
+    """
     spikein = spec.calibration
     genome = spec.genome
 
-    logger.info("Mapping sample reads to spikein genome")
-    align_bwamem2_paired(
-        spec,
-        spikein,
-        sample_r1,
-        sample_r2,
-        paths.sample_aligned_calibration,
-        paths.sample_non_aligned_calibration,
-        log_file,
-    )
-
-    logger.info("Mapping sample reads (not on spikein) to reference genome")
-    align_bwamem2_paired(
-        spec,
-        genome,
-        Path(f"{paths.sample_non_aligned_calibration}.1.gz"),
-        Path(f"{paths.sample_non_aligned_calibration}.2.gz"),
-        paths.sample_non_aligned_calibration_aligned_genome,
-        paths.sample_non_aligned_genome,  # unmapped-on-spikein prefix reuse
-        log_file,
-    )
-
+    # Step 1/2: map reads that missed the genome → spikein.
+    # The unmapped-from-genome FATSQs were just written by run(); consume them
+    # here while they still contain the correct reads.  The small fraction that
+    # misses both genomes is discarded by overwriting the now-consumed prefix.
     logger.info("Mapping sample reads (not on genome) to spikein genome")
     align_bwamem2_paired(
         spec,
@@ -152,29 +138,7 @@ def _align_spikein(
         Path(f"{paths.sample_non_aligned_genome}.1.gz"),
         Path(f"{paths.sample_non_aligned_genome}.2.gz"),
         paths.sample_non_aligned_genome_aligned_calibration,
-        paths.sample_non_aligned_genome,  # prefix reuse (unmapped discarded)
-        log_file,
-    )
-
-    logger.info("Mapping input reads to spikein genome")
-    align_bwamem2_paired(
-        spec,
-        spikein,
-        input_r1,  # type: ignore[arg-type]
-        input_r2,  # type: ignore[arg-type]
-        paths.input_aligned_calibration,
-        paths.input_non_aligned_calibration,
-        log_file,
-    )
-
-    logger.info("Mapping input reads (not on spikein) to reference genome")
-    align_bwamem2_paired(
-        spec,
-        genome,
-        Path(f"{paths.input_non_aligned_calibration}.1.gz"),
-        Path(f"{paths.input_non_aligned_calibration}.2.gz"),
-        paths.input_non_aligned_calibration_aligned_genome,
-        paths.input_non_aligned_genome,
+        paths.sample_non_aligned_genome,  # overwrite now-consumed FASTQ (discard doubly-unmapped)
         log_file,
     )
 
@@ -185,7 +149,53 @@ def _align_spikein(
         Path(f"{paths.input_non_aligned_genome}.1.gz"),
         Path(f"{paths.input_non_aligned_genome}.2.gz"),
         paths.input_non_aligned_genome_aligned_calibration,
-        paths.input_non_aligned_genome,
+        paths.input_non_aligned_genome,  # overwrite now-consumed FASTQ (discard doubly-unmapped)
+        log_file,
+    )
+
+    # Step 3/4: map all reads → spikein to learn which reads are spikein-specific.
+    logger.info("Mapping all sample reads to spikein genome")
+    align_bwamem2_paired(
+        spec,
+        spikein,
+        sample_r1,
+        sample_r2,
+        paths.sample_aligned_calibration,
+        paths.sample_non_aligned_calibration,
+        log_file,
+    )
+
+    logger.info("Mapping all input reads to spikein genome")
+    align_bwamem2_paired(
+        spec,
+        spikein,
+        input_r1,  # type: ignore[arg-type]
+        input_r2,  # type: ignore[arg-type]
+        paths.input_aligned_calibration,
+        paths.input_non_aligned_calibration,
+        log_file,
+    )
+
+    # Step 5/6: map reads that missed the spikein → genome.
+    logger.info("Mapping sample reads (not on spikein) to reference genome")
+    align_bwamem2_paired(
+        spec,
+        genome,
+        Path(f"{paths.sample_non_aligned_calibration}.1.gz"),
+        Path(f"{paths.sample_non_aligned_calibration}.2.gz"),
+        paths.sample_non_aligned_calibration_aligned_genome,
+        paths.sample_non_aligned_calibration,  # overwrite now-consumed FASTQ (discard doubly-unmapped)
+        log_file,
+    )
+
+    logger.info("Mapping input reads (not on spikein) to reference genome")
+    align_bwamem2_paired(
+        spec,
+        genome,
+        Path(f"{paths.input_non_aligned_calibration}.1.gz"),
+        Path(f"{paths.input_non_aligned_calibration}.2.gz"),
+        paths.input_non_aligned_calibration_aligned_genome,
+        paths.input_non_aligned_calibration,  # overwrite now-consumed FASTQ (discard doubly-unmapped)
         log_file,
     )
 
