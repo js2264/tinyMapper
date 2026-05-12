@@ -53,11 +53,11 @@ class RunPaths:
 
     @property
     def logfile(self) -> Path:
-        return self.outdir / "logs" / f"{self._date}-{self.sample_base}_{self.hash_}_log.txt"
+        return self.outdir / "logs" / f"{self._date}-{self.sample_base}_{self.hash_}.log"
 
     @property
-    def cmdfile(self) -> Path:
-        return self.outdir / "logs" / f"{self._date}-{self.sample_base}_{self.hash_}_commands.txt"
+    def errfile(self) -> Path:
+        return self.outdir / "logs" / f"{self._date}-{self.sample_base}_{self.hash_}.err"
 
     @property
     def scriptfile(self) -> Path:

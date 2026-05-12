@@ -69,7 +69,12 @@ class TinyMapperRunner:
         self._setup_dirs()
         paths.logfile.parent.mkdir(parents=True, exist_ok=True)
         paths.logfile.touch()
+        paths.errfile.touch()
         paths.tmpfile.touch()
+
+        from tinymapper._shell import configure_err_file
+
+        configure_err_file(paths.errfile)
 
         try:
             self._validate_tools()
@@ -123,7 +128,6 @@ class TinyMapperRunner:
             )
 
             self._log_finish()
-            self._write_cmd_file()
             self._cleanup_intermediates()
             return 0
 
@@ -313,6 +317,7 @@ class TinyMapperRunner:
             f"{now} | [INFO] tinyMapper v{VERSION}",
             f"{now} | [INFO] Hash        : {spec.hash}",
             f"{now} | [INFO] Log file    : {paths.logfile}",
+            f"{now} | [INFO] Err file    : {paths.errfile}",
             "---",
             f"{now} | [INFO] MODE        : {spec.mode.value}",
             f"{now} | [INFO] SAMPLE      : {spec.sample}",
@@ -334,17 +339,6 @@ class TinyMapperRunner:
         now = datetime.now().strftime("%y-%m-%d %H:%M:%S")
         with open(self.paths.logfile, "a") as fh:
             fh.write(f"---\n{now} | [INFO] Pipeline completed successfully\n")
-
-    def _write_cmd_file(self) -> None:
-        """Extract [EXEC] lines from log and write to commands file."""
-        try:
-            log_text = self.paths.logfile.read_text()
-            cmds = [
-                line.replace("[EXEC] ", "") for line in log_text.splitlines() if "[EXEC]" in line
-            ]
-            self.paths.cmdfile.write_text("\n".join(cmds) + "\n")
-        except OSError:
-            pass
 
     # ------------------------------------------------------------------ #
     #  Cleanup                                                             #
@@ -381,7 +375,7 @@ class TinyMapperRunner:
     def _cleanup_on_failure(self) -> None:
         """Remove any files matching this run's hash on failure."""
         for path in self.spec.output.rglob(f"*{self.spec.hash}*"):
-            if "_log.txt" not in path.name and path.is_file():
+            if path.suffix not in (".log", ".err") and path.is_file():
                 path.unlink(missing_ok=True)
 
     def _remove_empty_dirs(self) -> None:
