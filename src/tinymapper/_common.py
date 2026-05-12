@@ -132,13 +132,18 @@ def bam_coverage_cpm(
     bam: Path,
     out_bw: Path,
     log_file: Path,
-    extend_reads: bool = True,
+    extend_reads: bool | int | None = True,
     extra_flags: str = "",
 ) -> None:
     """bamCoverage with CPM normalisation."""
     bl = spec.blacklist_options
     id_ = spec.ignore_duplicates_flag
-    extend = "--extendReads" if extend_reads else ""
+    if isinstance(extend_reads, bool):
+        extend = "--extendReads" if extend_reads else ""
+    elif isinstance(extend_reads, int):
+        extend = f"--extendReads {extend_reads}"
+    else:
+        extend = ""
     cmd = (
         f"bamCoverage "
         f"--bam {bam} "

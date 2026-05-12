@@ -98,7 +98,7 @@ def run(
             _filter_no_calibration(spec, paths, log_file)
         else:
             _filter_no_calibration_se(spec, paths, log_file)
-        _tracks_no_calibration(spec, paths, log_file)
+        _tracks_no_calibration(spec, paths, log_file, paired=paired)
 
     # 2. Peak calling
     if spec.do_peaks:
@@ -252,9 +252,18 @@ def _filter_with_calibration(spec: JobSpec, paths: RunPaths, log_file: Path) -> 
     )
 
 
-def _tracks_no_calibration(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
+def _tracks_no_calibration(
+    spec: JobSpec, paths: RunPaths, log_file: Path, *, paired: bool = True
+) -> None:
     logger.info("Generating CPM track for sample")
-    bam_coverage_cpm(spec, paths.sample_aligned_genome_filtered, paths.sample_raw_track, log_file)
+    extend = True if paired else spec.extend_reads_len
+    bam_coverage_cpm(
+        spec,
+        paths.sample_aligned_genome_filtered,
+        paths.sample_raw_track,
+        log_file,
+        extend_reads=extend,
+    )
     if spec.do_input:
         logger.info("Generating CPM track for input")
         bam_coverage_cpm(
@@ -262,6 +271,7 @@ def _tracks_no_calibration(spec: JobSpec, paths: RunPaths, log_file: Path) -> No
             paths.input_aligned_genome_filtered,
             paths.input_raw_track,
             log_file,
+            extend_reads=extend,
         )
         logger.info("Generating sample/input ratio track")
         bam_compare(

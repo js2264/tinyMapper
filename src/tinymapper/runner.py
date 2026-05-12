@@ -99,6 +99,12 @@ class TinyMapperRunner:
                         "Spikein calibration requires paired-end reads "
                         "(R2 not found for sample prefix)."
                     )
+                if spec.mode != TinyMapperMode.rna and spec.extend_reads_len is None:
+                    raise RuntimeError(
+                        "Single-end reads detected but --extend-reads was not set.  "
+                        "Provide a fragment length (e.g. --extend-reads 200) so that "
+                        "bamCoverage can extend single-end reads to the correct size."
+                    )
                 logger.warning(
                     "Single-end reads detected. "
                     "Fragment-size filtering (MNase) and spikein calibration "

@@ -75,6 +75,9 @@ class JobSpec(BaseModel):
     # ---- MNase-specific ----
     mnase_sizes: str = "130,200"
 
+    # ---- Track generation ----
+    extend_reads_len: int | None = None  # --extendReads value for single-end bamCoverage
+
     # ---- Runtime (not CLI flags) ----
     hash: str = ""  # populated in model_post_init
     dry_run: bool = False

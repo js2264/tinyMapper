@@ -38,6 +38,7 @@ click.rich_click.OPTION_GROUPS = {
                 "--blacklist",
                 "--gsize",
                 "--duplicates",
+                "--extend-reads",
             ],
         },
         {
@@ -162,6 +163,17 @@ click.rich_click.OPTION_GROUPS = {
     default=False,
     help="Keep duplicate reads (default: remove duplicates).",
 )
+@click.option(
+    "-e",
+    "--extend-reads",
+    "extend_reads_len",
+    default=None,
+    type=int,
+    help=(
+        "Fragment length for single-end --extendReads in bamCoverage.  "
+        "Required when single-end FASTQs are detected; ignored for paired-end."
+    ),
+)
 # ---- HiC ----
 @click.option(
     "-hic",
@@ -231,6 +243,7 @@ def cli(
     blacklist: str,
     gsize: str,
     duplicates: bool,
+    extend_reads_len: int | None,
     hicstuff_opts: str,
     restriction: str,
     binning: str,
@@ -276,6 +289,7 @@ def cli(
             blacklist=blacklist,
             gsize=gsize,
             keep_duplicates=duplicates,
+            extend_reads_len=extend_reads_len,
             hicstuff_opts=hicstuff_opts,
             restriction=restriction,
             binning=binning,
