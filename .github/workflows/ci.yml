@@ -51,6 +51,27 @@ jobs:
       - name: Run tests
         run: uv run pytest tests/ -v --cov=tinymapper --cov-report=term-missing
 
+  test_commands:
+    name: Integration tests / Python ${{ matrix.python-version }} & micromamba
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: env/tinymapper.yaml
+          init-shell: bash
+          cache-environment: true
+
+      - name: Reinstall local package with dev dependencies
+        run: pip install -e .[dev]
+        shell: micromamba-shell {0}
+
+      - name: Run tests under micromamba env
+        run: pytest tests/test_integration.py -v --cov=tinymapper --cov-report=term-missing
+        shell: micromamba-shell {0}
+
   release:
     name: GitHub Release
     runs-on: ubuntu-latest

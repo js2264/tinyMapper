@@ -1,8 +1,14 @@
 """End-to-end integration tests for all tinyMapper modes.
 
-Each test invokes ``tinymapper`` via ``micromamba run -n autotinymapper_tm``
-and verifies the command exits cleanly.  The entire suite is skipped when the
-``autotinymapper_tm`` micromamba environment is not available.
+Each test invokes ``tinymapper`` and verifies the command exits cleanly.
+The suite runs if *either* of the following conditions is met:
+
+1. The ``autotinymapper_tm`` micromamba environment is available and contains
+   a working ``tinymapper`` installation.
+2. All CLI dependencies listed in ``env/tinymapper.yaml`` are present on
+   ``PATH`` (i.e. the current environment already has them installed).
+
+The entire suite is skipped when neither condition is satisfied.
 
 Run from the repo root so that relative paths like ``tests/testChIP`` resolve
 correctly against the bundled test FASTQ files.
@@ -39,6 +45,24 @@ def purge_results():
 # Skip marker
 # ---------------------------------------------------------------------------
 
+# Conda package name → executable(s) to check on PATH.
+# At least one executable per entry must be found.
+_CONDA_TO_BINS: dict[str, list[str]] = {
+    "bwa-mem2": ["bwa-mem2"],
+    "bowtie2": ["bowtie2"],
+    "star": ["STAR", "star"],
+    "samtools": ["samtools"],
+    "deeptools": ["bamCoverage"],
+    "macs3": ["macs3"],
+    "hicstuff": ["hicstuff"],
+    "cooler": ["cooler"],
+    "bedtools": ["bedtools"],
+    "ucsc-bedgraphtobigwig": ["bedGraphToBigWig"],
+    "mawk": ["mawk"],
+    "tree": ["tree"],
+    "java-jdk": ["java"],
+}
+
 
 def _env_available() -> bool:
     """Return True if the autotinymapper_tm micromamba env exists and has tinymapper."""
@@ -53,9 +77,49 @@ def _env_available() -> bool:
     return result.returncode == 0
 
 
+def _deps_available() -> bool:
+    """Return True if all CLI tools from env/tinymapper.yaml are on PATH."""
+    import re
+
+    yaml_path = REPO_ROOT / "env" / "tinymapper.yaml"
+    if not yaml_path.exists():
+        return False
+    # Parse dependency names (strip version specifiers and leading dashes)
+    with yaml_path.open() as fh:
+        lines = fh.readlines()
+    in_deps = False
+    declared: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped == "dependencies:":
+            in_deps = True
+            continue
+        if in_deps:
+            if stripped.startswith("- pip:"):
+                break  # skip pip sub-section
+            if stripped.startswith("- ") and not stripped.startswith("- pip"):
+                pkg = re.split(r"[>=<!\s]", stripped[2:])[0].lower()
+                declared.append(pkg)
+    # Check executables
+    for pkg in declared:
+        bins = _CONDA_TO_BINS.get(pkg)
+        if bins is None:
+            continue  # no executable to check (e.g. pip)
+        if not any(shutil.which(b) for b in bins):
+            return False
+    # Also require tinymapper itself
+    return shutil.which("tinymapper") is not None
+
+
+_USE_ENV = _env_available()
+_USE_DIRECT = not _USE_ENV and _deps_available()
+
 requires_env = pytest.mark.skipif(
-    not _env_available(),
-    reason=f"micromamba env '{ENV_NAME}' not available",
+    not (_USE_ENV or _USE_DIRECT),
+    reason=(
+        f"micromamba env '{ENV_NAME}' not available and "
+        "not all dependencies from env/tinymapper.yaml are installed"
+    ),
 )
 
 
@@ -65,9 +129,16 @@ requires_env = pytest.mark.skipif(
 
 
 def _run(args: list[str], output_dir: Path) -> subprocess.CompletedProcess[str]:
-    """Run tinymapper with *args* via the autotinymapper_tm env."""
+    """Run tinymapper with *args*, via the micromamba env or directly."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    cmd = ["micromamba", "run", "-n", ENV_NAME, "tinymapper"] + args + ["--output", str(output_dir)]
+    if _USE_ENV:
+        cmd = (
+            ["micromamba", "run", "-n", ENV_NAME, "tinymapper"]
+            + args
+            + ["--output", str(output_dir)]
+        )
+    else:
+        cmd = ["tinymapper"] + args + ["--output", str(output_dir)]
     print(f"Running command: {' '.join(cmd)}")
     return subprocess.run(
         cmd,

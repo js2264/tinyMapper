@@ -45,7 +45,8 @@ tinymapper --help
 If all bioinformatics tools are already available in your environment:
 
 ```sh
-pip install git+https://github.com/js2264/tinyMapper.git
+uv venv
+uv pip install git+https://github.com/js2264/tinyMapper.git
 tinymapper --help
 ```
 
