@@ -2,7 +2,7 @@
 set -eu
 
 # version is recovered from pyproject.toml
-VERSION=`grep -oP '^version = "\K[^"]+' pyproject.toml`
+VERSION="LEGACY_MODE"
 INVOC=$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")
 HASH=`LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 6`
 
