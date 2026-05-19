@@ -20,6 +20,7 @@ dependencies:
   - bedtools
   - ucsc-bedGraphToBigWig
   # Utilities
+  - multiqc>=1.35
   - mawk
   - tree
   - java-jdk
