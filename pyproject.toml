@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tinymapper"
-version = "0.14.24"
+version = "0.14.25"
 description = "Map and process ChIP-seq, RNA-seq, ATAC-seq, MNase-seq, HiC and shotgun reads"
 readme = "README.md"
 requires-python = ">=3.10"
