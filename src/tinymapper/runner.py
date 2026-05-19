@@ -34,6 +34,7 @@ _SINGLE_FASTQ_PATTERNS = [
     "_R1.fq.gz",
     "_R1.fastq.gz",
     "_nxq_R1.fq.gz",
+    "_nvq_R1.fq.gz",
     ".fq.gz",
     ".fastq.gz",
 ]

@@ -80,6 +80,7 @@ def _run_hicstuff(
         f"--prefix {prefix} "
         f"{spec.hicstuff_opts} "
         f"--force "
+        f"--no-cleanup "
         f"--binning {spec.binning} "
         f"--exclude Mito,chrM,MT "
         f"--genome {paths.hic_genome_fasta} "

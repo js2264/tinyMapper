@@ -434,7 +434,7 @@ class RunPaths:
 
     @property
     def hic_tmp_dir(self) -> Path:
-        return self.outdir / "tmp" / self.hash_
+        return self.outdir / "tmp"
 
     @property
     def hic_genome_fasta(self) -> Path:
