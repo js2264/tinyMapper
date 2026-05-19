@@ -50,6 +50,7 @@ def _align_star(
     """Run STAR; supports paired-end (r1 + r2) and single-end (r1 only)."""
     genome_dir = f"{spec.genome}/STAR/"
     out_bam = paths.sample_aligned_genome_bam
+    out_bam.parent.mkdir(parents=True, exist_ok=True)
     read_files = f"{r1} {r2}" if r2 is not None else str(r1)
     logger.info("Mapping sample reads to reference genome with STAR")
     cmd = (
@@ -72,6 +73,7 @@ def _sort_bam(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
     """Sort and index the STAR output BAM."""
     bam = paths.sample_aligned_genome_bam
     filtered = paths.sample_aligned_genome_filtered
+    filtered.parent.mkdir(parents=True, exist_ok=True)
     so = spec.samtools_thread_opts
     logger.info("Sorting and indexing BAM")
     cmd = f"samtools sort {so} -l 9 -T {bam}_sorting -o {filtered} {bam}"

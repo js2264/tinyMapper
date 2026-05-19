@@ -106,6 +106,7 @@ def _filter_by_size(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
 
     in_bam = paths.sample_aligned_genome_filtered
     out_bam = paths.sample_aligned_genome_filtered_readsize
+    out_bam.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = (
         f"samtools view -@ {spec.threads} -h {in_bam} "
@@ -122,6 +123,7 @@ def _generate_40bp_bam(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
     so = spec.samtools_thread_opts
     in_bam = paths.sample_aligned_genome_filtered_readsize
     out_bam = paths.sample_aligned_genome_filtered_readsize40
+    out_bam.parent.mkdir(parents=True, exist_ok=True)
 
     # Shift read start and set TLEN to ±40 using mawk
     cmd = (

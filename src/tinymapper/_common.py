@@ -21,6 +21,16 @@ logger = logging.getLogger(__name__)
 _SE_FILTER_OPTS = "-F 0x004 -q 10"
 
 
+def _ensure_parent(path: Path) -> None:
+    """Create parent directory if it doesn't exist (defensive mkdir -p).
+
+    Protects against concurrent runs where another job's cleanup may have
+    removed a shared output subdirectory between ``_setup_dirs`` and the
+    actual file write.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+
 # ------------------------------------------------------------------ #
 #  Alignment                                                          #
 # ------------------------------------------------------------------ #
@@ -36,6 +46,8 @@ def align_bwamem2_paired(
     log_file: Path,
 ) -> None:
     """Run bwa-mem2 in paired-end mode and extract unmapped pairs."""
+    _ensure_parent(out_sam)
+    _ensure_parent(unmapped_prefix)
     genome_fa = f"{genome_prefix}.fa"
     aln = f" {spec.alignment}" if spec.alignment else ""
     cmd = f"bwa-mem2 mem{aln} -v 1 -t {spec.threads} {genome_fa} {r1} {r2} > {out_sam}"
@@ -58,6 +70,7 @@ def align_bwamem2_single(
     log_file: Path,
 ) -> None:
     """Run bwa-mem2 treating R1 and R2 as independent single-end reads."""
+    _ensure_parent(out_sam)
     genome_fa = f"{genome_prefix}.fa"
     aln = f" {spec.alignment}" if spec.alignment else ""
     # Cat both files so each read is aligned independently (same as bowtie2 -U r1,r2).
@@ -73,6 +86,7 @@ def align_bwamem2_se(
     log_file: Path,
 ) -> None:
     """Run bwa-mem2 with a single read file (true single-end data)."""
+    _ensure_parent(out_sam)
     genome_fa = f"{genome_prefix}.fa"
     aln = f" {spec.alignment}" if spec.alignment else ""
     cmd = f"bwa-mem2 mem{aln} -v 1 -t {spec.threads} {genome_fa} {r1} > {out_sam}"
@@ -91,6 +105,7 @@ def filter_bam_paired(
     log_file: Path,
 ) -> None:
     """fixmate → sort → markdup → view (filter) → sort → BAM, then index."""
+    _ensure_parent(out_bam)
     so = spec.samtools_thread_opts
     rd = spec.remove_duplicates_flag
     fo = spec.filter_opts
@@ -112,6 +127,7 @@ def filter_bam_single(
     filter_opts: str = _SE_FILTER_OPTS,
 ) -> None:
     """sort → view (filter) → sort → BAM, then index (no fixmate/markdup for SE)."""
+    _ensure_parent(out_bam)
     so = spec.samtools_thread_opts
     fo = filter_opts
     cmd = (
@@ -136,6 +152,7 @@ def bam_coverage_cpm(
     extra_flags: str = "",
 ) -> None:
     """bamCoverage with CPM normalisation."""
+    _ensure_parent(out_bw)
     bl = spec.blacklist_options
     id_ = spec.ignore_duplicates_flag
     if isinstance(extend_reads, bool):
@@ -168,6 +185,7 @@ def bam_coverage_scaled(
     log_file: Path,
 ) -> None:
     """bamCoverage with a fixed scale factor (spikein calibration)."""
+    _ensure_parent(out_bw)
     bl = spec.blacklist_options
     id_ = spec.ignore_duplicates_flag
     cmd = (
@@ -196,6 +214,7 @@ def bam_compare(
     operation: str = "ratio",
 ) -> None:
     """bamCompare (sample / input ratio or log2 ratio track)."""
+    _ensure_parent(out_bw)
     bl = spec.blacklist_options
     id_ = spec.ignore_duplicates_flag
     cmd = (
@@ -231,6 +250,7 @@ def call_peaks(
     paired: bool = True,
 ) -> None:
     """macs3 callpeak.  Uses BAMPE for paired-end data, BAM for single-end."""
+    out_dir.mkdir(parents=True, exist_ok=True)
     ctrl = f"-c {input_bam} " if input_bam else ""
     fmt = "BAMPE" if paired else "BAM"
     cmd = (

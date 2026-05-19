@@ -161,6 +161,7 @@ def _coverage_track(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
         log_file,
         spec.dry_run,
     )
+    paths.sample_raw_track.parent.mkdir(parents=True, exist_ok=True)
     run_cmd(
         f"bedGraphToBigWig {bedgraph} {genome_sizes} {paths.sample_raw_track}",
         log_file,

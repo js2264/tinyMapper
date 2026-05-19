@@ -128,6 +128,7 @@ def _align_as_single(
     log_file: Path,
 ) -> None:
     """bwa-mem2 in single-end mode: R1 (and optionally R2) treated as independent reads."""
+    paths.sample_aligned_genome.parent.mkdir(parents=True, exist_ok=True)
     genome_fa = f"{spec.genome}.fa"
     aln = f" {spec.alignment}" if spec.alignment else ""
     if r2 is not None:
