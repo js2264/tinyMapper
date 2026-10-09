@@ -32,7 +32,7 @@ def run(
     """Execute the RNA-seq pipeline (paired-end or single-end)."""
     _align_star(spec, paths, sample_r1, sample_r2, log_file)
     _sort_bam(spec, paths, log_file)
-    _rna_tracks(spec, paths, log_file)
+    _rna_tracks(spec, paths, log_file, paired=sample_r2 is not None)
 
 
 # ------------------------------------------------------------------ #
@@ -81,9 +81,15 @@ def _sort_bam(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
     run_cmd(f"samtools index -@ {spec.threads} {filtered}", log_file, spec.dry_run)
 
 
-def _rna_tracks(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
-    """Generate unstranded, forward-strand and reverse-strand BigWig tracks."""
+def _rna_tracks(spec: JobSpec, paths: RunPaths, log_file: Path, paired: bool = True) -> None:
+    """Generate unstranded, forward-strand and reverse-strand BigWig tracks.
+
+    Stranded tracks extend paired reads to their fragment; single-end reads are
+    extended only when ``--extend-reads`` gives a length, since bamCoverage
+    refuses a bare ``--extendReads`` on single-end data.
+    """
     bam = paths.sample_aligned_genome_filtered
+    extend = True if paired else spec.extend_reads_len
 
     logger.info("Generating unstranded CPM track")
     bam_coverage_cpm(spec, bam, paths.sample_raw_track, log_file, extend_reads=False)
@@ -94,6 +100,7 @@ def _rna_tracks(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
         bam,
         paths.sample_track_fwd,
         log_file,
+        extend_reads=extend,
         extra_flags="--filterRNAstrand forward",
     )
 
@@ -103,5 +110,6 @@ def _rna_tracks(spec: JobSpec, paths: RunPaths, log_file: Path) -> None:
         bam,
         paths.sample_track_rev,
         log_file,
+        extend_reads=extend,
         extra_flags="--filterRNAstrand reverse",
     )

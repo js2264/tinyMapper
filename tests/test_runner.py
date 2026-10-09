@@ -268,3 +268,71 @@ def test_run_shotgun_paired_end_default_ok(tmp_path):
         runner = TinyMapperRunner(spec)
         exit_code = runner.run()
     assert exit_code == 0
+
+
+# ------------------------------------------------------------------ #
+#  RNA-seq, single-end                                                 #
+# ------------------------------------------------------------------ #
+
+
+def _make_star_genome(tmp_path: Path) -> Path:
+    """A fake genome prefix with the FASTA, sizes and STAR index RNA mode checks for."""
+    prefix = _make_genome_dir(tmp_path)
+    (Path(str(prefix)) / "STAR").mkdir(parents=True, exist_ok=True)
+    return prefix
+
+
+def test_run_rna_single_end_tracks_do_not_ask_for_bare_extension(tmp_path):
+    """SE RNA-seq needs no --extend-reads, and no bamCoverage call may pass a bare --extendReads."""
+    r1 = tmp_path / "JS001_R1.fq.gz"
+    r1.touch()
+    genome_prefix = _make_star_genome(tmp_path)
+    outdir = tmp_path / "results"
+    spec = JobSpec(
+        mode="rna",
+        sample=str(tmp_path / "JS001"),
+        genome=str(genome_prefix),
+        output=outdir,
+        hash="RNASE1",
+        dry_run=True,
+    )
+    with patch("shutil.which", return_value="/usr/bin/fake"):
+        runner = TinyMapperRunner(spec)
+        exit_code = runner.run()
+    assert exit_code == 0
+    logged = "".join(path.read_text() for path in (outdir / "logs").glob("*.log"))
+    coverage = [line for line in logged.splitlines() if "bamCoverage" in line and "[EXEC]" in line]
+    assert len(coverage) == 3
+    for line in coverage:
+        words = line.split()
+        if "--extendReads" in words:
+            following = words[words.index("--extendReads") + 1]
+            assert following.isdigit(), line
+
+
+def test_run_rna_paired_end_stranded_tracks_extend_to_fragment(tmp_path):
+    """PE RNA-seq stranded tracks keep extending reads to their fragment."""
+    r1 = tmp_path / "JS001_R1.fq.gz"
+    r2 = tmp_path / "JS001_R2.fq.gz"
+    r1.touch()
+    r2.touch()
+    genome_prefix = _make_star_genome(tmp_path)
+    outdir = tmp_path / "results"
+    spec = JobSpec(
+        mode="rna",
+        sample=str(tmp_path / "JS001"),
+        genome=str(genome_prefix),
+        output=outdir,
+        hash="RNAPE1",
+        dry_run=True,
+    )
+    with patch("shutil.which", return_value="/usr/bin/fake"):
+        runner = TinyMapperRunner(spec)
+        exit_code = runner.run()
+    assert exit_code == 0
+    logged = "".join(path.read_text() for path in (outdir / "logs").glob("*.log"))
+    stranded = [
+        line for line in logged.splitlines() if "--filterRNAstrand" in line and "[EXEC]" in line
+    ]
+    assert len(stranded) == 2
+    assert all("--extendReads" in line for line in stranded)
