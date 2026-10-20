@@ -76,7 +76,7 @@ class JobSpec(BaseModel):
     mnase_sizes: str = "130,200"
 
     # ---- Track generation ----
-    extend_reads_len: int | None = None  # --extendReads value for single-end bamCoverage
+    extend_reads_len: int | None = None  # --extendReads value for single-end bamCoverage/bamCompare
 
     # ---- Shotgun-specific ----
     as_single_end: bool = False  # --as-single-end: cat R1+R2 and map as SE (legacy shotgun)
@@ -143,9 +143,15 @@ class JobSpec(BaseModel):
         return "" if self.keep_duplicates else "-r"
 
     @property
-    def ignore_duplicates_flag(self) -> str:
-        """bamCoverage --ignoreDuplicates flag."""
-        return "" if self.keep_duplicates else "--ignoreDuplicates"
+    def exclude_duplicates_flag(self) -> str:
+        """deepTools option skipping reads flagged as duplicates (empty when keeping dups).
+
+        Replaces ``--ignoreDuplicates``, which deepTools 4.0 removed.  Every BAM
+        reaching a track step has been through ``samtools markdup`` first:
+        paired-end BAMs have their duplicates removed (so this is a no-op),
+        single-end and RNA BAMs have them flagged (0x400) and this skips them.
+        """
+        return "" if self.keep_duplicates else "--samFlagExclude 1024"
 
     @property
     def blacklist_options(self) -> str:

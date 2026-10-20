@@ -280,6 +280,7 @@ def _tracks_no_calibration(
             paths.input_aligned_genome_filtered,
             paths.sample_input_track,
             log_file,
+            extend_reads=extend,
         )
         logger.info("Generating sample/input log2 ratio track")
         bam_compare(
@@ -289,6 +290,7 @@ def _tracks_no_calibration(
             paths.sample_input_log2_track,
             log_file,
             operation="log2",
+            extend_reads=extend,
         )
 
 
