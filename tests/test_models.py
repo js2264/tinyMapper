@@ -139,9 +139,14 @@ def test_remove_duplicates_flag_keep():
     assert spec.remove_duplicates_flag == ""
 
 
-def test_ignore_duplicates_flag_default():
+def test_exclude_duplicates_flag_default():
     spec = JobSpec(mode="chip", sample="/reads/JS001", genome="/g/W303/W303")
-    assert spec.ignore_duplicates_flag == "--ignoreDuplicates"
+    assert spec.exclude_duplicates_flag == "--samFlagExclude 1024"
+
+
+def test_exclude_duplicates_flag_keep():
+    spec = JobSpec(mode="chip", sample="/reads/JS001", genome="/g/W303/W303", keep_duplicates=True)
+    assert spec.exclude_duplicates_flag == ""
 
 
 def test_blacklist_options_empty():
