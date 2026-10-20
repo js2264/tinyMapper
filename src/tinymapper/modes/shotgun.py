@@ -7,7 +7,7 @@ Default (paired-end) pipeline:
 
 Legacy single-end pipeline (--as-single-end):
   1. bwa-mem2 single-end: R1 and R2 concatenated and mapped independently
-  2. samtools sort → filter → BAM (no fixmate/markdup)
+  2. samtools sort → filter → markdup (flag only) → BAM (no fixmate)
   3. bamCoverage CPM track (--extendReads from --extend-reads)
 """
 

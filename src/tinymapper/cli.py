@@ -181,8 +181,9 @@ click.rich_click.OPTION_GROUPS = {
     default=None,
     type=int,
     help=(
-        "Fragment length for single-end --extendReads in bamCoverage.  "
-        "Required when single-end FASTQs are detected; ignored for paired-end."
+        "Fragment length for single-end --extendReads in bamCoverage/bamCompare.  "
+        "Required when single-end FASTQs are detected (optional for RNA); "
+        "ignored for paired-end."
     ),
 )
 # ---- HiC ----

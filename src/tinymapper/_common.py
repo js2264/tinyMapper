@@ -126,13 +126,20 @@ def filter_bam_single(
     log_file: Path,
     filter_opts: str = _SE_FILTER_OPTS,
 ) -> None:
-    """sort → view (filter) → sort → BAM, then index (no fixmate/markdup for SE)."""
+    """sort → view (filter) → markdup → sort → BAM, then index (no fixmate for SE).
+
+    Duplicates among the reads passing the filter are only flagged (0x400), not
+    removed: the BAM and the reads macs3 sees are unchanged, and the track steps
+    skip flagged reads (``spec.exclude_duplicates_flag``).  Not run with --duplicates.
+    """
     _ensure_parent(out_bam)
     so = spec.samtools_thread_opts
     fo = filter_opts
+    markdup = "" if spec.keep_duplicates else f"| samtools markdup {so} - - "
     cmd = (
         f"samtools sort {so} -T {in_sam}_sorting {in_sam} "
         f"| samtools view {so} {fo} -1 -b - "
+        f"{markdup}"
         f"| samtools sort --write-index {so} -l 9 -T {in_sam}_sorting2 -o {out_bam}"
     )
     run_cmd(cmd, log_file, spec.dry_run)
@@ -141,6 +148,20 @@ def filter_bam_single(
 # ------------------------------------------------------------------ #
 #  Track generation                                                  #
 # ------------------------------------------------------------------ #
+
+
+def _extend_reads_option(extend_reads: bool | int | None) -> str:
+    """deepTools --extendReads option.
+
+    ``True`` lets deepTools take the fragment length from the read pairs, so it
+    is only valid for paired-end BAMs; single-end BAMs need an explicit length
+    (``int``).  ``False``/``None`` disables extension.
+    """
+    if isinstance(extend_reads, bool):
+        return "--extendReads" if extend_reads else ""
+    if isinstance(extend_reads, int):
+        return f"--extendReads {extend_reads}"
+    return ""
 
 
 def bam_coverage_cpm(
@@ -154,13 +175,8 @@ def bam_coverage_cpm(
     """bamCoverage with CPM normalisation."""
     _ensure_parent(out_bw)
     bl = spec.blacklist_options
-    id_ = spec.ignore_duplicates_flag
-    if isinstance(extend_reads, bool):
-        extend = "--extendReads" if extend_reads else ""
-    elif isinstance(extend_reads, int):
-        extend = f"--extendReads {extend_reads}"
-    else:
-        extend = ""
+    dup = spec.exclude_duplicates_flag
+    extend = _extend_reads_option(extend_reads)
     cmd = (
         f"bamCoverage "
         f"--bam {bam} "
@@ -171,7 +187,7 @@ def bam_coverage_cpm(
         f"--normalizeUsing CPM "
         f"--skipNonCoveredRegions "
         f"{extend} "
-        f"{id_} "
+        f"{dup} "
         f"{extra_flags}"
     )
     run_cmd(cmd, log_file, spec.dry_run)
@@ -187,7 +203,7 @@ def bam_coverage_scaled(
     """bamCoverage with a fixed scale factor (spikein calibration)."""
     _ensure_parent(out_bw)
     bl = spec.blacklist_options
-    id_ = spec.ignore_duplicates_flag
+    dup = spec.exclude_duplicates_flag
     cmd = (
         f"bamCoverage "
         f"--bam {bam} "
@@ -199,7 +215,7 @@ def bam_coverage_scaled(
         f"--scaleFactor {scale_factor} "
         f"--skipNonCoveredRegions "
         f"--extendReads "
-        f"{id_}"
+        f"{dup}"
     )
     run_cmd(cmd, log_file, spec.dry_run)
 
@@ -212,11 +228,13 @@ def bam_compare(
     log_file: Path,
     *,
     operation: str = "ratio",
+    extend_reads: bool | int | None = True,
 ) -> None:
     """bamCompare (sample / input ratio or log2 ratio track)."""
     _ensure_parent(out_bw)
     bl = spec.blacklist_options
-    id_ = spec.ignore_duplicates_flag
+    dup = spec.exclude_duplicates_flag
+    extend = _extend_reads_option(extend_reads)
     cmd = (
         f"bamCompare "
         f"-b1 {sample_bam} -b2 {input_bam} "
@@ -229,8 +247,8 @@ def bam_compare(
         f"{bl} "
         f"--binSize 5 "
         f"--skipNonCoveredRegions "
-        f"--extendReads "
-        f"{id_}"
+        f"{extend} "
+        f"{dup}"
     )
     run_cmd(cmd, log_file, spec.dry_run)
 

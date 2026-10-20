@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from unittest.mock import patch
 
@@ -168,11 +169,11 @@ def test_run_dry_run_returns_zero(tmp_path):
     assert (outdir / "logs").is_dir()
 
 
-def _make_genome_dir(tmp_path: Path) -> Path:
+def _make_genome_dir(tmp_path: Path, name: str = "W303") -> Path:
     """Create a minimal fake genome index and return the prefix."""
     genome_dir = tmp_path / "genome"
     genome_dir.mkdir(exist_ok=True)
-    prefix = genome_dir / "W303"
+    prefix = genome_dir / name
     for ext in [
         ".fa",
         ".fa.fai",
@@ -268,3 +269,138 @@ def test_run_shotgun_paired_end_default_ok(tmp_path):
         runner = TinyMapperRunner(spec)
         exit_code = runner.run()
     assert exit_code == 0
+
+
+# ------------------------------------------------------------------ #
+#  Generated commands (dry-run)                                        #
+# ------------------------------------------------------------------ #
+
+_TRACK_TOOLS = ("bamCoverage ", "bamCompare ")
+
+# Pipeline configurations whose tracks are built with deepTools.
+_CONFIGS = {
+    "chip-pe-input": {"mode": "chip", "with_input": True},
+    "chip-pe-calibration": {"mode": "chip", "with_input": True, "with_calibration": True},
+    "chip-se-input": {"mode": "chip", "paired": False, "with_input": True, "extend_reads_len": 200},
+    "atac-pe": {"mode": "atac"},
+    "atac-se": {"mode": "atac", "paired": False, "extend_reads_len": 200},
+    "mnase-pe": {"mode": "mnase"},
+    "mnase-se": {"mode": "mnase", "paired": False, "extend_reads_len": 200},
+    "shotgun-pe": {"mode": "shotgun"},
+    "shotgun-se": {"mode": "shotgun", "paired": False, "extend_reads_len": 200},
+    "shotgun-as-se": {"mode": "shotgun", "as_single_end": True, "extend_reads_len": 200},
+    "rna-pe": {"mode": "rna"},
+    "rna-se": {"mode": "rna", "paired": False},
+}
+_SINGLE_END_CONFIGS = [
+    "chip-se-input",
+    "atac-se",
+    "mnase-se",
+    "shotgun-se",
+    "shotgun-as-se",
+    "rna-se",
+]
+# Configurations without upstream duplicate removal (duplicates are flagged instead).
+_FLAGGING_CONFIGS = [*_SINGLE_END_CONFIGS, "rna-pe"]
+
+
+def _dry_run_commands(
+    tmp_path: Path,
+    mode: str,
+    *,
+    paired: bool = True,
+    with_input: bool = False,
+    with_calibration: bool = False,
+    **spec_kwargs,
+) -> list[str]:
+    """Dry-run *mode* on empty placeholder files and return the commands it logs."""
+    reads = tmp_path / "reads"
+    reads.mkdir(exist_ok=True)
+    for name in ["JS001", "JS002"] if with_input else ["JS001"]:
+        (reads / f"{name}_R1.fq.gz").touch()
+        if paired:
+            (reads / f"{name}_R2.fq.gz").touch()
+    genome_prefix = _make_genome_dir(tmp_path)
+    (genome_prefix / "STAR").mkdir(parents=True, exist_ok=True)  # RNA index directory
+    spec = JobSpec(
+        mode=mode,
+        sample=str(reads / "JS001"),
+        input=str(reads / "JS002") if with_input else "",
+        calibration=str(_make_genome_dir(tmp_path, "CBS138")) if with_calibration else "",
+        genome=str(genome_prefix),
+        output=tmp_path / "results",
+        hash="TSTRUN",
+        dry_run=True,
+        **spec_kwargs,
+    )
+    with patch("shutil.which", return_value="/usr/bin/fake"):
+        runner = TinyMapperRunner(spec)
+        assert runner.run() == 0
+    log = runner.paths.logfile.read_text()
+    return [line.removeprefix("[EXEC] ") for line in log.splitlines() if line.startswith("[EXEC] ")]
+
+
+def _track_commands(cmds: list[str]) -> list[str]:
+    return [c for c in cmds if c.startswith(_TRACK_TOOLS)]
+
+
+@pytest.mark.parametrize("config", list(_CONFIGS))
+def test_tracks_skip_duplicates_marked_upstream(tmp_path, config):
+    """deepTools >= 4.0 has no --ignoreDuplicates: duplicates go through samtools markdup first."""
+    cmds = _dry_run_commands(tmp_path, **_CONFIGS[config])
+    tracks = _track_commands(cmds)
+    assert tracks
+    first_track = cmds.index(tracks[0])
+    assert any("samtools markdup" in c for c in cmds[:first_track])
+    for cmd in tracks:
+        assert "--ignoreDuplicates" not in cmd
+        assert "--samFlagExclude 1024" in cmd
+
+
+@pytest.mark.parametrize("config", _FLAGGING_CONFIGS)
+def test_single_end_and_rna_flag_duplicates_without_removing(tmp_path, config):
+    """Without upstream removal, reads are kept in the BAM and only flagged as duplicates."""
+    cmds = _dry_run_commands(tmp_path, **_CONFIGS[config])
+    markdup = [c for c in cmds if "samtools markdup" in c]
+    assert markdup
+    for cmd in markdup:
+        assert " -r " not in cmd.split("samtools markdup", 1)[1]
+
+
+@pytest.mark.parametrize("config", _FLAGGING_CONFIGS)
+def test_keep_duplicates_skips_flagging_and_exclusion(tmp_path, config):
+    cmds = _dry_run_commands(tmp_path, **_CONFIGS[config], keep_duplicates=True)
+    assert not any("samtools markdup" in c for c in cmds)
+    assert not any("--samFlagExclude" in c for c in _track_commands(cmds))
+
+
+@pytest.mark.parametrize("config", _SINGLE_END_CONFIGS)
+def test_no_bare_extend_reads_on_single_end(tmp_path, config):
+    """deepTools cannot infer a fragment length from single-end reads."""
+    for cmd in _track_commands(_dry_run_commands(tmp_path, **_CONFIGS[config])):
+        assert not re.search(r"--extendReads(?!\s+\d)", cmd), cmd
+
+
+def test_single_end_chip_input_compare_tracks_use_fragment_length(tmp_path):
+    cmds = _dry_run_commands(tmp_path, **_CONFIGS["chip-se-input"])
+    compare = [c for c in cmds if c.startswith("bamCompare ")]
+    assert len(compare) == 2
+    for cmd in compare:
+        assert "--extendReads 200 " in cmd
+
+
+def test_single_end_rna_stranded_tracks(tmp_path):
+    """Without --extend-reads, single-end RNA tracks are not extended at all."""
+    tracks = _track_commands(_dry_run_commands(tmp_path, **_CONFIGS["rna-se"]))
+    assert len(tracks) == 3
+    assert not any("--extendReads" in c for c in tracks)
+
+
+def test_single_end_rna_stranded_tracks_with_extend_reads(tmp_path):
+    tracks = _track_commands(
+        _dry_run_commands(tmp_path, **_CONFIGS["rna-se"], extend_reads_len=150)
+    )
+    stranded = [c for c in tracks if "--filterRNAstrand" in c]
+    assert len(stranded) == 2
+    for cmd in stranded:
+        assert "--extendReads 150 " in cmd

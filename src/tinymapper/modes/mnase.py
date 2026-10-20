@@ -9,7 +9,7 @@ Paired-end pipeline:
 
 Single-end pipeline (fragment size is unknown):
   1. bwa-mem2 single-end alignment
-  2. samtools sort → filter → BAM
+  2. samtools sort → filter → markdup (flag only) → BAM
   3. bamCoverage: standard CPM track only
 """
 
